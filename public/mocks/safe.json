@@ -1,0 +1,28 @@
+{
+  "address": "DEMO_TEMIZ_TOKEN",
+  "name": "Örnek Temiz Token",
+  "symbol": "TEMIZ",
+  "riskScore": 14,
+  "verdict": "ok",
+  "verdictLabel": "TEMİZ GÖRÜNÜYOR",
+  "summary": "Bu token temiz görünüyor. Yeni token basma ve dondurma yetkileri kapatılmış, arz geniş bir kitleye dağılmış ve web sitesinde şüpheli bir vaat bulunmadı. Yine de her yatırım risk taşır.",
+  "checks": [
+    { "id": "mint_authority", "label": "Yeni para basılabilir mi?", "status": "ok", "detail": "Hayır. Mint yetkisi kalıcı olarak kapatılmış.", "raw": "mintAuthority: null" },
+    { "id": "freeze_authority", "label": "Satışın dondurulabilir mi?", "status": "ok", "detail": "Hayır. Freeze yetkisi kapatılmış.", "raw": "freezeAuthority: null" },
+    { "id": "top_holders", "label": "Para kimin elinde?", "status": "ok", "detail": "İlk 10 cüzdan arzın %18'ini tutuyor.", "raw": "top10Share: 0.18" },
+    { "id": "liquidity", "label": "Likidite yeterli mi?", "status": "ok", "detail": "Havuzda yaklaşık 2,4 milyon $ likidite var.", "raw": "liquidityUsd: 2400000" },
+    { "id": "website", "label": "Web sitesi güvenilir mi?", "status": "ok", "detail": "Şüpheli vaat bulunmadı; dokümantasyon ve ekip bilgisi mevcut.", "raw": "flags: 0" }
+  ],
+  "holders": [
+    { "label": "Cüzdan #1", "pct": 4 },
+    { "label": "Cüzdan #2", "pct": 3 },
+    { "label": "Cüzdan #3", "pct": 3 },
+    { "label": "Cüzdan #4–10", "pct": 8 },
+    { "label": "Diğer herkes", "pct": 82 }
+  ],
+  "siteFlags": [
+    { "text": "Şüpheli bir vaat bulunmadı.", "level": "ok" }
+  ],
+  "audioUrl": null,
+  "createdAt": "2026-11-26T12:00:00Z"
+}

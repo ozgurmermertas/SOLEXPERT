@@ -1,0 +1,30 @@
+{
+  "address": "DEMO_RISKLI_TOKEN",
+  "name": "Örnek Riskli Token",
+  "symbol": "RISK",
+  "riskScore": 82,
+  "verdict": "danger",
+  "verdictLabel": "UZAK DUR",
+  "summary": "Bu token riskli. Yaratıcısı istediği an yeni token basabiliyor ve satışınızı dondurabiliyor. Ayrıca arzın yüzde yetmiş dördü yalnızca on cüzdanda. Web sitesinde garanti getiri vaatleri var.",
+  "checks": [
+    { "id": "mint_authority", "label": "Yeni para basılabilir mi?", "status": "danger", "detail": "Evet. Mint yetkisi hâlâ açık; yaratıcı istediği kadar yeni token basabilir.", "raw": "mintAuthority: 7xKq…9fPz" },
+    { "id": "freeze_authority", "label": "Satışın dondurulabilir mi?", "status": "danger", "detail": "Evet. Freeze yetkisi açık; cüzdanın dondurulursa tokenı satamazsın.", "raw": "freezeAuthority: 7xKq…9fPz" },
+    { "id": "top_holders", "label": "Para kimin elinde?", "status": "danger", "detail": "İlk 10 cüzdan arzın %74'ünü tutuyor.", "raw": "top10Share: 0.74" },
+    { "id": "liquidity", "label": "Likidite yeterli mi?", "status": "warn", "detail": "Havuzda yaklaşık 18.000 $ likidite var ve kilitli değil.", "raw": "liquidityUsd: 18000, locked: false" },
+    { "id": "website", "label": "Web sitesi güvenilir mi?", "status": "warn", "detail": "Sitede 'garanti' ve '100x' gibi gerçekçi olmayan vaatler bulundu.", "raw": "flags: 3" }
+  ],
+  "holders": [
+    { "label": "Cüzdan #1", "pct": 41 },
+    { "label": "Cüzdan #2", "pct": 14 },
+    { "label": "Cüzdan #3", "pct": 9 },
+    { "label": "Cüzdan #4–10", "pct": 10 },
+    { "label": "Diğer herkes", "pct": 26 }
+  ],
+  "siteFlags": [
+    { "text": "\"Garanti 100x getiri, kaçırma!\"", "level": "warn" },
+    { "text": "\"Sadece 24 saat: ilk alanlara %500 bonus\"", "level": "warn" },
+    { "text": "Ekip ve yol haritası sayfası başka bir projeyle neredeyse birebir aynı.", "level": "warn" }
+  ],
+  "audioUrl": null,
+  "createdAt": "2026-11-26T12:00:00Z"
+}
