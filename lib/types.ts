@@ -26,6 +26,8 @@ export interface CheckResult {
   status: CheckStatus;
   points: number;       // Bu kontrolün skora eklediği risk puanı
   detail: string;       // Kısa, insan okunur açıklama. Örn: "Yetki hâlâ açık"
+  detailEn?: string;    // detail'in İngilizcesi (arayüz EN modunda kullanır)
+  technical?: string;   // Kısa teknik değer, arayüzde "Teknik detay" altında. Örn: "mintAuthority: null"
   raw?: unknown;        // Ham veri (hata ayıklama için, arayüzde gösterilmez)
 }
 
@@ -44,13 +46,31 @@ export interface TokenInfo {
 
 export type RiskLevel = "dusuk" | "dikkat" | "yuksek";
 
+/** Arzın dağılımı, toplam arzın yüzdesi (0–100). En büyük hesaplar likidite havuzu olabilir. */
+export interface HolderDistribution {
+  wallet1: number;      // en büyük hesap
+  wallet2: number;
+  wallet3: number;
+  wallets4to10: number; // 4.–10. hesapların toplamı
+  others: number;       // geri kalan herkes
+}
+
+/** Resmi site analizinden bir gözlem. */
+export interface WebsiteNote {
+  text: string;          // Türkçe
+  textEn: string | null; // İngilizce (yoksa null)
+  level: "ok" | "warn";  // ok = olumlu/nötr, warn = kırmızı bayrak
+}
+
 export interface TokenReport {
   token: TokenInfo;
   score: number;            // 0–100, kural tabanlı (lib/scoring/score.ts)
   level: RiskLevel;
   checks: CheckResult[];
   positiveSignals: string[]; // Örn: "Jupiter doğrulanmış listesinde"
-  summary: string | null;    // LLM'in yazdığı Türkçe özet (lib/ai/report.ts)
+  holderDistribution: HolderDistribution | null; // "Para kimin elinde?" paneli; alınamazsa null
+  websiteNotes: WebsiteNote[]; // "Web sitesinde bulunanlar" paneli; site incelenmediyse boş
+  summary: string | null;    // LLM'in yazdığı özet, istenen dilde (lib/ai/report.ts)
   attestationTx: string | null; // Devnet memo işlem imzası
   analyzedAt: string;        // ISO tarih
 }

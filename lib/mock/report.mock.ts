@@ -29,6 +29,11 @@ export const mockRiskyReport: TokenReport = {
     { id: "website", group: "proje", title: "Resmi site", status: "tehlikeli", points: 10, detail: "Sitede 'garanti 100x' vaadi var; 'likidite kilitli' iddiası zincirle çelişiyor." },
   ],
   positiveSignals: [],
+  holderDistribution: { wallet1: 41, wallet2: 14, wallet3: 9, wallets4to10: 7, others: 29 },
+  websiteNotes: [
+    { text: "Sitedeki iddialar zincirle çelişiyor.", textEn: "Claims on the site contradict on-chain data.", level: "warn" },
+    { text: "Site likiditenin kilitli olduğunu söylüyor ama zincirde kilit yok.", textEn: "The site says liquidity is locked, but there is no lock on-chain.", level: "warn" },
+  ],
   summary:
     "Bu token yüksek riskli. Geliştirici hâlâ yeni token basabilir, havuzdaki parayı çekebilir ve arzın %71'i 10 cüzdanda. Sitesi likiditenin kilitli olduğunu söylüyor ama zincirde kilit yok.",
   attestationTx: null,

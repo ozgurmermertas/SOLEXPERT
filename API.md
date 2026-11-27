@@ -21,8 +21,10 @@ if (!res.ok) {
 
 - Süre: 5–25 saniye (site analizi ve AI özeti dahil). Arayüzde yükleniyor durumu şart.
 - Hızlı mod (AI'sız): body'e `withAi: false` ekle → 2–5 saniye.
-- Dil: body'e `lang: "en"` eklenirse AI özeti İngilizce yazılır (varsayılan `"tr"`). Kontrol metinleri şimdilik Türkçe;
-  her kontrolde İngilizce başlık için `titleEn` alanı var.
+- Dil: body'e `lang: "en"` eklenirse AI özeti İngilizce yazılır (varsayılan `"tr"`). Kontrol metinleri her zaman
+  iki dilde gelir (`title`/`titleEn`, `detail`/`detailEn`); dil değişince sadece özet için yeni istek gerekir.
+- Önbellek: aynı token 10 dk içinde tekrar sorulursa anında döner. Dil değişince zincir analizi
+  önbellekten gelir, sadece AI özeti yeni dilde yazılır (birkaç saniye).
 - Tarayıcıdan test: `http://localhost:3000/api/analyze?address=TOKEN_ADRESI`
 
 ### Hata kodları
@@ -39,9 +41,24 @@ if (!res.ok) {
   - `alim_satim` → "Alıp satabilir misin?"
   - `proje` → "Proje gerçek mi?"
 - Her kartta `status` ikonu: `gecti` 🟢, `dikkat` 🟡, `tehlikeli` 🔴, `bilinmiyor` ⚪
+- `checks[].technical`: kısa teknik değer ("Teknik detay" altında), ör. `mintAuthority: null`
 - `summary`: AI özeti (null olabilir)
 - `positiveSignals`: yeşil etiketler
+- `holderDistribution`: "Para kimin elinde?" paneli, arzın yüzdesi (0–100). Alınamazsa `null`.
+  ```json
+  { "wallet1": 9.95, "wallet2": 4.8, "wallet3": 2.54, "wallets4to10": 5.21, "others": 77.5 }
+  ```
+  En büyük hesaplar likidite havuzu olabilir.
+- `websiteNotes`: "Web sitesinde bulunanlar" paneli. Site incelenmediyse (site yok / AI kapalı) boş dizi.
+  ```json
+  [{ "text": "Şüpheli bir vaat bulunmadı.", "textEn": "No suspicious promises found.", "level": "ok" }]
+  ```
+  `level`: `warn` = kırmızı bayrak, `ok` = olumlu/nötr gözlem. `textEn` null olabilir.
 - `token`: isim, sembol, logo, linkler
+
+SolExpert arayüzü (`public/js/app.js`) 11 kontrolü 5 karta toplar: basma · dondurma (+gizli ayarlar,
+satış testi) · para kimin elinde (+bağlantılı cüzdanlar, geliştirici payı) · likidite (+kilit) ·
+web sitesi (+token yaşı). Yan kontroller sadece sorunluysa kartın rengini ve metnini etkiler.
 
 ## 2. Sesli okuma
 

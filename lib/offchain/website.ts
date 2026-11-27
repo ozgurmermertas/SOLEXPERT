@@ -4,6 +4,7 @@ import { config } from "../config";
 import { fetchJson } from "../http";
 import { generate } from "../ai/gemini";
 import type { WebsiteFacts } from "../facts";
+import type { WebsiteNote } from "../types";
 
 interface ScrapeResult {
   success?: boolean;
@@ -37,7 +38,7 @@ export async function getWebsiteFacts(url: string | null, chain: ChainSummary): 
   if (!markdown.trim()) {
     return {
       url, templateText: false, unrealisticPromises: false, contradictsChain: false,
-      notes: ["Site açılamadı ya da içeriği boş."],
+      notes: [{ text: "Site açılamadı ya da içeriği boş.", textEn: "The site could not be opened or is empty.", level: "warn" }],
     };
   }
 
@@ -54,8 +55,13 @@ GÖREV: Aşağıdaki site metnine bakıp şu 3 soruyu cevapla. Sadece metinde a�
 2. unrealisticPromises: Garanti kazanç, "100x", "kesin yükselecek" gibi gerçekçi olmayan vaatler var mı?
 3. contradictsChain: Sitedeki bir iddia yukarıdaki zincir gerçekleriyle çelişiyor mu? (ör. "likidite kilitli" diyor ama kilit yok)
 
+Ayrıca sitede gördüğün en fazla 3 kısa gözlemi yaz. Her gözlem tek cümle olsun, hem Türkçe ("tr")
+hem İngilizce ("en"); kırmızı bayraksa "level": "warn", olumlu ya da nötrse "level": "ok".
+Sitedeki çarpıcı bir vaadi aynen alıntılayabilirsin (tırnak içinde). "Güvenli" / "safe" kelimelerini kullanma.
+
 Yanıtı SADECE şu JSON şeklinde ver:
-{"templateText": bool, "unrealisticPromises": bool, "contradictsChain": bool, "notes": ["en fazla 3 kısa Türkçe gözlem"]}
+{"templateText": bool, "unrealisticPromises": bool, "contradictsChain": bool,
+ "notes": [{"tr": "kısa Türkçe gözlem", "en": "short English observation", "level": "ok" | "warn"}]}
 
 SİTE METNİ:
 """
@@ -63,12 +69,27 @@ ${markdown}
 """`;
 
   const raw = await generate(prompt, { json: true });
-  const parsed = JSON.parse(raw) as Partial<Omit<WebsiteFacts, "url">>;
+  const parsed = JSON.parse(raw) as {
+    templateText?: boolean; unrealisticPromises?: boolean; contradictsChain?: boolean;
+    notes?: unknown[];
+  };
+  const notes: WebsiteNote[] = (Array.isArray(parsed.notes) ? parsed.notes : []).slice(0, 3).flatMap((n) => {
+    // Eski biçim (düz metin) de kabul edilir.
+    if (typeof n === "string") return n.trim() ? [{ text: n.trim(), textEn: null, level: "ok" as const }] : [];
+    const o = (n ?? {}) as { tr?: unknown; en?: unknown; level?: unknown };
+    const text = typeof o.tr === "string" ? o.tr.trim() : "";
+    if (!text) return [];
+    return [{
+      text,
+      textEn: typeof o.en === "string" && o.en.trim() ? o.en.trim() : null,
+      level: o.level === "warn" ? ("warn" as const) : ("ok" as const),
+    }];
+  });
   return {
     url,
     templateText: parsed.templateText === true,
     unrealisticPromises: parsed.unrealisticPromises === true,
     contradictsChain: parsed.contradictsChain === true,
-    notes: Array.isArray(parsed.notes) ? parsed.notes.slice(0, 3).map(String) : [],
+    notes,
   };
 }

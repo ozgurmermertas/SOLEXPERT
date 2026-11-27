@@ -69,25 +69,67 @@
   // TokenReport → bu tasarımın beklediği rapor şekli
   const LEVEL = { dusuk: "ok", dikkat: "warn", yuksek: "danger" };
   const STATUS = { gecti: "ok", dikkat: "warn", tehlikeli: "danger", bilinmiyor: "unknown" };
-  const GROUP_ORDER = ["anahtarlar", "dagilim", "alim_satim", "proje"]; // API.md'deki grup sırası
+  const SEVERITY = { tehlikeli: 3, dikkat: 2, bilinmiyor: 1, gecti: 0 };
+
+  // Backend'in 11 kontrolü tasarımdaki 5 karta toplanır. İlk kontrol kartın ana konusu;
+  // diğerleri sadece sorun varsa (dikkat/tehlikeli) kartın rengini ve metnini etkiler.
+  const CARDS = [
+    { id: "mint_authority", tr: "Yeni para basılabilir mi?", en: "Can new tokens be minted?", checks: ["mint_authority"] },
+    { id: "freeze_authority", tr: "Satışın dondurulabilir mi?", en: "Can your sale be frozen?", checks: ["freeze_authority", "token2022", "sell_test"] },
+    { id: "top_holders", tr: "Para kimin elinde?", en: "Who holds the supply?", checks: ["top10", "bundle", "dev_share"] },
+    { id: "liquidity", tr: "Likidite yeterli mi?", en: "Is there enough liquidity?", checks: ["liquidity", "lp_lock"] },
+    { id: "website", tr: "Web sitesi güvenilir mi?", en: "Is the website trustworthy?", checks: ["website", "age"] },
+  ];
+
+  function toCard(card, byId) {
+    const [primary, ...rest] = card.checks.map((id) => byId[id]).filter(Boolean);
+    if (!primary) return null;
+    // Ana kontrol + sorunlu yan kontroller; en ciddi olan önce (bundle tehlikeliyse metin onunla başlar)
+    const shown = [primary, ...rest.filter((c) => SEVERITY[c.status] >= 2)]
+      .map((c, i) => ({ c, i }))
+      .sort((a, b) => SEVERITY[b.c.status] - SEVERITY[a.c.status] || a.i - b.i)
+      .map((x) => x.c);
+    const worst = shown[0];
+    const text = (c) => (L.lang === "en" && c.detailEn) || c.detail;
+    return {
+      id: card.id,
+      label: T(card.tr, card.en),
+      status: STATUS[worst.status] || "unknown",
+      detail: shown.map(text).join(" "),
+      raw: shown.map((c) => c.technical).filter(Boolean).join(" · "),
+    };
+  }
+
+  // Yüzdeleri tasarımdaki gibi tam sayı göster (1'in altındakiler tek ondalık); toplam 100 olsun.
+  const pctView = (p) => (p >= 1 ? Math.round(p) : Math.round(p * 10) / 10);
+  function toHolders(d) {
+    if (!d) return [];
+    const rows = [
+      { label: T("Cüzdan #1", "Wallet #1"), pct: pctView(d.wallet1) },
+      { label: T("Cüzdan #2", "Wallet #2"), pct: pctView(d.wallet2) },
+      { label: T("Cüzdan #3", "Wallet #3"), pct: pctView(d.wallet3) },
+      { label: T("Cüzdan #4–10", "Wallets #4–10"), pct: pctView(d.wallets4to10) },
+    ];
+    const others = Math.max(0, Math.round((100 - rows.reduce((s, r) => s + r.pct, 0)) * 10) / 10);
+    rows.push({ label: T("Diğer herkes", "Everyone else"), pct: others });
+    return rows;
+  }
+
   function toView(tr, address) {
     const score = Math.max(0, Math.min(100, Math.round(tr.score) || 0));
-    const rank = (g) => { const i = GROUP_ORDER.indexOf(g); return i < 0 ? GROUP_ORDER.length : i; };
-    const checks = [...tr.checks]
-      .sort((a, b) => rank(a.group) - rank(b.group))
-      .map((c) => ({ id: c.id, label: (L.lang === "en" && c.titleEn) || c.title, status: STATUS[c.status] || "unknown", detail: c.detail }));
-    // Olumlu sinyaller mevcut kart tasarımıyla yeşil kart olarak eklenir
-    (tr.positiveSignals || []).filter(Boolean).forEach((s, i) =>
-      checks.push({ id: "positive_" + i, label: T("Olumlu sinyal", "Positive signal"), status: "ok", detail: s }));
+    const byId = Object.fromEntries(tr.checks.map((c) => [c.id, c]));
     return {
       address: (tr.token && tr.token.address) || address,
       riskScore: score,
       // level yoksa CLAUDE.md aralıkları: 0–30 düşük, 31–60 dikkat, 61–100 yüksek
       verdict: LEVEL[tr.level] || (score >= 61 ? "danger" : score >= 31 ? "warn" : "ok"),
       summary: typeof tr.summary === "string" ? tr.summary.trim() : "",
-      checks,
-      holders: [],   // backend henüz vermiyor → panelde "veri yok"
-      siteFlags: [], // backend henüz vermiyor → panelde "veri yok"
+      checks: CARDS.map((card) => toCard(card, byId)).filter(Boolean),
+      holders: toHolders(tr.holderDistribution),
+      siteFlags: (tr.websiteNotes || []).map((n) => ({
+        text: (L.lang === "en" && n.textEn) || n.text,
+        level: n.level === "warn" ? "warn" : "ok",
+      })),
       audioUrl: null,
     };
   }
@@ -190,7 +232,7 @@
         ${c.raw ? `<details><summary>${esc(L.t("rep.tech"))}</summary><code>${esc(c.raw)}</code></details>` : ""}
       </div>`).join("");
 
-    // Backend cüzdan dağılımı / site alıntısı vermiyorsa panel yerinde kalır, "veri yok" yazar.
+    // Cüzdan dağılımı alınamadıysa panel yerinde kalır, "veri yok" yazar.
     const NO_DATA = T("— Veri yok", "— No data");
     $("#holders").innerHTML = (r.holders || []).map((h) => `
       <div class="hbar ${h.pct >= 25 && !/diğer|other|everyone/i.test(h.label) ? "big" : ""}">
@@ -198,8 +240,9 @@
       </div>`).join("") || esc(NO_DATA);
     setTimeout(() => document.querySelectorAll(".hbar .fill").forEach((f) => (f.style.width = f.dataset.w + "%")), 100);
 
+    // Site incelenmediyse (site yok / AI kapalı) Rojin'in "site bulunamadı" satırı gösterilir.
     $("#flags").innerHTML = (r.siteFlags || []).map((f) => `<li class="${f.level === "ok" ? "clean" : ""}">${esc(f.text)}</li>`).join("")
-      || esc(NO_DATA);
+      || `<li class="clean">${esc(L.t("rep.noSite"))}</li>`;
 
     $("#report").classList.remove("hidden");
     window.Mascot.setReport(r.summary, r.audioUrl);
@@ -260,9 +303,15 @@
     renderPartners();
     counters.forEach((c) => { cio.unobserve(c); cio.observe(c); });
     const r = window.__lastReport;
-    // Backend raporu tek dilde döndürür; analizi tekrar çalıştırmadan (5–25 sn, API kotası) yeniden çiz.
+    // Kartlar ve paneller iki dilde gelir: hemen yeni dilde çiz. AI özeti tek dilde gelir:
+    // yeni dilde iste (backend analizi önbellekten verir, sadece özeti yazar) ve gelince güncelle.
     if (r && lastRaw && !busy && !$("#report").classList.contains("hidden")) {
-      render(toView(lastRaw.data, lastRaw.address));
+      const { address } = lastRaw, lang = L.lang;
+      render(toView(lastRaw.data, address));
+      try {
+        const v = await fetchReport(address);
+        if (L.lang === lang && lastRaw && lastRaw.address === address && !busy) render(v);
+      } catch (_) {}
     }
   });
 

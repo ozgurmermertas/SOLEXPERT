@@ -8,14 +8,28 @@ interface LargestAccounts {
 
 export async function getHolderFacts(address: string, supply: bigint): Promise<HolderFacts> {
   const res = await rpc<LargestAccounts>("getTokenLargestAccounts", [address]);
-  if (supply === 0n) return { top10Pct: 0, largestPct: 0 };
+  if (supply === 0n) {
+    return { top10Pct: 0, largestPct: 0, distribution: { wallet1: 0, wallet2: 0, wallet3: 0, wallets4to10: 0, others: 0 } };
+  }
 
   const amounts = res.value.map((a) => BigInt(a.amount));
-  const top10 = amounts.slice(0, 10).reduce((s, a) => s + a, 0n);
+  const sum = (from: number, to: number) => amounts.slice(from, to).reduce((s, a) => s + a, 0n);
+  const top10 = sum(0, 10);
   // Not: listede likidite havuzunun hesabı da olabilir; detay metninde belirtilir.
+  const distribution = {
+    wallet1: pct(amounts[0] ?? 0n, supply),
+    wallet2: pct(amounts[1] ?? 0n, supply),
+    wallet3: pct(amounts[2] ?? 0n, supply),
+    wallets4to10: pct(sum(3, 10), supply),
+    others: 0,
+  };
+  // "Diğer herkes" = 100 − ilk 10 (yuvarlama farkı burada toplanır, toplam tam 100 olur)
+  distribution.others = Math.max(0, Math.round((100 - distribution.wallet1 - distribution.wallet2
+    - distribution.wallet3 - distribution.wallets4to10) * 100) / 100);
   return {
     top10Pct: pct(top10, supply),
-    largestPct: pct(amounts[0] ?? 0n, supply),
+    largestPct: distribution.wallet1,
+    distribution,
   };
 }
 

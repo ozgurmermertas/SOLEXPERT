@@ -9,7 +9,7 @@ import { getLpFacts } from "./onchain/lpLock";
 import { getWebsiteFacts } from "./offchain/website";
 import { aiEnabled } from "./ai/gemini";
 import { writeSummary } from "./ai/report";
-import { buildChecks, computeScore, positiveSignals } from "./scoring/score";
+import { buildChecks, computeScore, positiveSignals, websiteNotes } from "./scoring/score";
 import type { Facts } from "./facts";
 import type { TokenReport } from "./types";
 
@@ -20,15 +20,32 @@ export class InvalidAddressError extends Error {}
 export interface AnalyzeOptions {
   /** false: site analizi ve AI özeti atlanır (hızlı test için). */
   withAi?: boolean;
-  /** AI özetinin dili. Kontrol metinleri şimdilik sadece Türkçe. */
+  /** AI özetinin dili. Kontrol metinleri her zaman iki dilde gelir (detail / detailEn). */
   lang?: "tr" | "en";
 }
 
 // ---- Bellek içi önbellek: aynı token 10 dk içinde tekrar sorulursa analiz tekrarlanmaz ----
+// İki katman: zincir + site analizi (dilden bağımsız) ve AI özeti (dile göre).
+// Böylece arayüzde dil değişince sadece özet yeniden yazılır (birkaç saniye).
 // Sunucu süreci yeniden başlarsa (ör. yeni deploy) boşalır. Kalıcı cache için TODO: Supabase.
 const CACHE_TTL_MS = 10 * 60_000;
 const CACHE_MAX = 200;
-const cache = new Map<string, { at: number; report: Promise<TokenReport> }>();
+type Base = Omit<TokenReport, "summary">;
+const baseCache = new Map<string, { at: number; value: Promise<Base> }>();
+const summaryCache = new Map<string, { at: number; value: Promise<string | null> }>();
+
+/** Önbellekten al ya da üret; devam eden iş de paylaşılır, hata önbelleğe alınmaz. */
+function cached<T>(map: Map<string, { at: number; value: Promise<T> }>, key: string, make: () => Promise<T>): Promise<T> {
+  const now = Date.now();
+  const hit = map.get(key);
+  if (hit && now - hit.at < CACHE_TTL_MS) return hit.value;
+  for (const [k, v] of map) if (now - v.at >= CACHE_TTL_MS) map.delete(k);
+  if (map.size >= CACHE_MAX) map.delete(map.keys().next().value!);
+  const value = make();
+  map.set(key, { at: now, value });
+  value.catch(() => { if (map.get(key)?.value === value) map.delete(key); });
+  return value;
+}
 
 export async function analyzeToken(rawAddress: string, opts: AnalyzeOptions = {}): Promise<TokenReport> {
   const address = rawAddress.trim();
@@ -36,21 +53,16 @@ export async function analyzeToken(rawAddress: string, opts: AnalyzeOptions = {}
   const withAi = (opts.withAi ?? true) && aiEnabled();
   const lang = opts.lang ?? "tr";
 
-  const key = `${address}|${withAi ? "ai" : "noai"}|${lang}`;
-  const now = Date.now();
-  const hit = cache.get(key);
-  if (hit && now - hit.at < CACHE_TTL_MS) return hit.report; // devam eden analiz de paylaşılır
-
-  for (const [k, v] of cache) if (now - v.at >= CACHE_TTL_MS) cache.delete(k);
-  if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value!);
-
-  const report = runAnalysis(address, withAi, lang);
-  cache.set(key, { at: now, report });
-  report.catch(() => { if (cache.get(key)?.report === report) cache.delete(key); }); // hata önbelleğe alınmaz
-  return report;
+  const baseKey = `${address}|${withAi ? "ai" : "noai"}`;
+  const base = await cached(baseCache, baseKey, () => runAnalysis(address, withAi));
+  // 6) AI özeti, istenen dilde (başarısız olursa rapor yine döner).
+  const summary = withAi
+    ? await cached(summaryCache, `${baseKey}|${lang}`, () => safe("summary", writeSummary(base, lang)))
+    : null;
+  return { ...base, summary };
 }
 
-async function runAnalysis(address: string, withAi: boolean, lang: "tr" | "en"): Promise<TokenReport> {
+async function runAnalysis(address: string, withAi: boolean): Promise<Base> {
 
   // 1) Mint bilgisi şart: token değilse burada durur.
   const mint = await getMintFacts(address);
@@ -87,7 +99,7 @@ async function runAnalysis(address: string, withAi: boolean, lang: "tr" | "en"):
   const checks = buildChecks(facts);
   const { score, level } = computeScore(checks);
 
-  const report: Omit<TokenReport, "summary"> = {
+  const report: Base = {
     token: {
       address,
       name: metadata?.name ?? null,
@@ -104,13 +116,12 @@ async function runAnalysis(address: string, withAi: boolean, lang: "tr" | "en"):
     level,
     checks,
     positiveSignals: positiveSignals(facts),
+    holderDistribution: holders?.distribution ?? null,
+    websiteNotes: websiteNotes(facts),
     attestationTx: null, // TODO (hackathon): rapor hash'ini devnet'e memo olarak yaz.
     analyzedAt: new Date().toISOString(),
   };
-
-  // 6) AI özeti (başarısız olursa rapor yine döner).
-  const summary = withAi ? await safe("summary", writeSummary(report, lang)) : null;
-  return { ...report, summary };
+  return report;
 }
 
 /** Bir kontrol hata verirse null döner ve sunucu loguna yazar. */

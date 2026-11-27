@@ -1,50 +1,81 @@
 // TÜM puan kuralları burada. Ham gerçekler → kontrol kartları → 0–100 risk skoru.
 // Kural değişirse CLAUDE.md'deki tabloyu da güncelle.
-import type { CheckResult, RiskLevel } from "../types";
+// Her kontrol: Türkçe detail + İngilizce detailEn + kısa teknik değer (arayüzde "Teknik detay").
+import type { CheckResult, RiskLevel, WebsiteNote } from "../types";
 import type { Facts } from "../facts";
 import { isDangerousGroup } from "../onchain/bundle";
 
 const fmt = (n: number) => n.toLocaleString("tr-TR", { maximumFractionDigits: 1 });
-const usd = (n: number) => n.toLocaleString("tr-TR", { maximumFractionDigits: 0 }) + " $";
+const fmtEn = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 1 });
+// Okunur para: 2,4 milyon $ / 747 bin $ / 8.500 $  —  $2.4 million / $747K / $8,500
+const usd = (n: number) =>
+  n >= 1e6 ? `${fmt(n / 1e6)} milyon $` : n >= 1e4 ? `${Math.round(n / 1e3).toLocaleString("tr-TR")} bin $`
+  : n.toLocaleString("tr-TR", { maximumFractionDigits: 0 }) + " $";
+const usdEn = (n: number) =>
+  n >= 1e6 ? `$${fmtEn(n / 1e6)} million` : n >= 1e4 ? `$${Math.round(n / 1e3).toLocaleString("en-US")}K`
+  : "$" + n.toLocaleString("en-US", { maximumFractionDigits: 0 });
+const short = (a: string) => (a.length > 12 ? `${a.slice(0, 4)}…${a.slice(-4)}` : a);
 
-const unknown = (base: Omit<CheckResult, "status" | "points" | "detail">, why = "Veri alınamadı."): CheckResult => ({
-  ...base, status: "bilinmiyor", points: 0, detail: why,
-});
+type Base = Pick<CheckResult, "id" | "group" | "title">;
+type Text = { tr: string; en: string };
+
+const result = (
+  base: Base, status: CheckResult["status"], points: number, t: Text, technical?: string,
+): CheckResult => ({ ...base, status, points, detail: t.tr, detailEn: t.en, ...(technical ? { technical } : {}) });
+
+const unknown = (base: Base, t: Text = { tr: "Veri alınamadı.", en: "Data could not be retrieved." }) =>
+  result(base, "bilinmiyor", 0, t);
 
 export function buildChecks(f: Facts): CheckResult[] {
   const checks: CheckResult[] = [];
 
   // ---- 1. Anahtarlar ----
+  const mintBase = { id: "mint_authority", group: "anahtarlar", title: "Basma yetkisi" } as const;
   checks.push(
     f.mint.mintAuthority
-      ? { id: "mint_authority", group: "anahtarlar", title: "Basma yetkisi", status: "tehlikeli", points: 25,
-          detail: "Yetki hâlâ açık: geliştirici istediği an yeni token basabilir." }
-      : { id: "mint_authority", group: "anahtarlar", title: "Basma yetkisi", status: "gecti", points: 0,
-          detail: "Yetki kapatılmış, yeni token basılamaz." },
+      ? result(mintBase, "tehlikeli", 25, {
+          tr: "Evet. Basma yetkisi hâlâ açık: geliştirici istediği an yeni token basabilir.",
+          en: "Yes. Mint authority is still active: the developer can mint new tokens at any time.",
+        }, `mintAuthority: ${short(f.mint.mintAuthority)}`)
+      : result(mintBase, "gecti", 0, {
+          tr: "Hayır. Basma yetkisi kapatılmış, yeni token basılamaz.",
+          en: "No. Mint authority has been revoked; no new tokens can be minted.",
+        }, "mintAuthority: null"),
   );
+
+  const freezeBase = { id: "freeze_authority", group: "anahtarlar", title: "Dondurma yetkisi" } as const;
   checks.push(
     f.mint.freezeAuthority
-      ? { id: "freeze_authority", group: "anahtarlar", title: "Dondurma yetkisi", status: "tehlikeli", points: 15,
-          detail: "Yetki hâlâ açık: cüzdanındaki token'lar dondurulabilir." }
-      : { id: "freeze_authority", group: "anahtarlar", title: "Dondurma yetkisi", status: "gecti", points: 0,
-          detail: "Yetki kapatılmış." },
+      ? result(freezeBase, "tehlikeli", 15, {
+          tr: "Evet. Dondurma yetkisi açık: cüzdanındaki token'lar dondurulabilir, satamazsın.",
+          en: "Yes. Freeze authority is active: the tokens in your wallet can be frozen so you can't sell.",
+        }, `freezeAuthority: ${short(f.mint.freezeAuthority)}`)
+      : result(freezeBase, "gecti", 0, {
+          tr: "Hayır. Dondurma yetkisi kapatılmış.",
+          en: "No. Freeze authority has been revoked.",
+        }, "freezeAuthority: null"),
   );
 
   const t = f.mint.token2022;
   const t22Base = { id: "token2022", group: "anahtarlar", title: "Gizli ayarlar" } as const;
   if (!t) {
-    checks.push({ ...t22Base, status: "gecti", points: 0, detail: "Standart SPL token, gizli ayar yok." });
+    checks.push(result(t22Base, "gecti", 0,
+      { tr: "Standart SPL token, gizli ayar yok.", en: "Standard SPL token, no hidden settings." }, "program: SPL Token"));
   } else {
-    const issues: string[] = [];
-    if (t.permanentDelegate) issues.push("token'ları senden alabilecek kalıcı yetkili var (permanent delegate)");
-    if (t.transferFeeBps > 0) issues.push(`her transferde %${fmt(t.transferFeeBps / 100)} vergi kesiliyor`);
-    if (t.transferHook) issues.push("transferleri engelleyebilecek özel kod (transfer hook) bağlı");
-    if (t.nonTransferable) issues.push("token transfer edilemiyor");
-    if (t.defaultFrozen) issues.push("yeni hesaplar donmuş olarak açılıyor");
+    const issues: Text[] = [];
+    if (t.permanentDelegate) issues.push({ tr: "token'ları senden alabilecek kalıcı yetkili var (permanent delegate)", en: "a permanent delegate can take tokens from you" });
+    if (t.transferFeeBps > 0) issues.push({ tr: `her transferde %${fmt(t.transferFeeBps / 100)} vergi kesiliyor`, en: `every transfer is taxed ${fmtEn(t.transferFeeBps / 100)}%` });
+    if (t.transferHook) issues.push({ tr: "transferleri engelleyebilecek özel kod (transfer hook) bağlı", en: "custom code (transfer hook) can block transfers" });
+    if (t.nonTransferable) issues.push({ tr: "token transfer edilemiyor", en: "the token cannot be transferred" });
+    if (t.defaultFrozen) issues.push({ tr: "yeni hesaplar donmuş olarak açılıyor", en: "new accounts start frozen" });
+    const tech = `program: Token-2022, transferFeeBps: ${t.transferFeeBps}, permanentDelegate: ${t.permanentDelegate ? short(t.permanentDelegate) : "null"}`;
     checks.push(
       issues.length
-        ? { ...t22Base, status: "tehlikeli", points: 20, detail: cap(issues.join("; ")) + "." }
-        : { ...t22Base, status: "gecti", points: 0, detail: "Token-2022, ama tehlikeli bir ayar yok." },
+        ? result(t22Base, "tehlikeli", 20, {
+            tr: cap(issues.map((i) => i.tr).join("; ")) + ".",
+            en: cap(issues.map((i) => i.en).join("; ")) + ".",
+          }, tech)
+        : result(t22Base, "gecti", 0, { tr: "Token-2022, ama tehlikeli bir ayar yok.", en: "Token-2022, but no dangerous settings." }, tech),
     );
   }
 
@@ -53,94 +84,127 @@ export function buildChecks(f: Facts): CheckResult[] {
   if (!f.holders) checks.push(unknown(top10Base));
   else {
     const p = f.holders.top10Pct;
-    const note = " (likidite havuzu da bu listede olabilir)";
+    const tech = `top10Share: ${(p / 100).toFixed(2)}`;
+    const text: Text = {
+      tr: `İlk 10 cüzdanın arzdaki payı %${fmt(p)}.`,
+      en: `The top 10 wallets hold ${fmtEn(p)}% of the supply.`,
+    };
+    const poolNote: Text = { tr: " (Likidite havuzu da bu listede olabilir.)", en: " (The liquidity pool may be in this list.)" };
     checks.push(
-      p > 50 ? { ...top10Base, status: "tehlikeli", points: 15, detail: `İlk 10 hesabın payı: %${fmt(p)}${note}.` }
-      : p > 30 ? { ...top10Base, status: "dikkat", points: 7, detail: `İlk 10 hesabın payı: %${fmt(p)}${note}.` }
-      : { ...top10Base, status: "gecti", points: 0, detail: `İlk 10 hesabın payı: %${fmt(p)}, dağılım makul.` },
+      p > 50 ? result(top10Base, "tehlikeli", 15, { tr: text.tr + poolNote.tr, en: text.en + poolNote.en }, tech)
+      : p > 30 ? result(top10Base, "dikkat", 7, { tr: text.tr + poolNote.tr, en: text.en + poolNote.en }, tech)
+      : result(top10Base, "gecti", 0, text, tech),
     );
   }
 
   const devBase = { id: "dev_share", group: "dagilim", title: "Geliştirici payı" } as const;
-  if (!f.creator) checks.push(unknown(devBase, "Oluşturan cüzdan bulunamadı (token çok eski veya çok aktif)."));
-  else {
+  if (!f.creator) {
+    checks.push(unknown(devBase, {
+      tr: "Oluşturan cüzdan bulunamadı (token çok eski veya çok aktif).",
+      en: "The creator wallet could not be found (the token is very old or very active).",
+    }));
+  } else {
     const p = f.creator.creatorPct;
-    checks.push(
-      p > 10
-        ? { ...devBase, status: "tehlikeli", points: 10, detail: `Oluşturan cüzdanın payı: %${fmt(p)}.` }
-        : { ...devBase, status: "gecti", points: 0, detail: `Oluşturan cüzdanın payı: %${fmt(p)}.` },
-    );
+    const text: Text = { tr: `Oluşturan cüzdanın payı: %${fmt(p)}.`, en: `The creator wallet holds ${fmtEn(p)}%.` };
+    const tech = `creator: ${short(f.creator.creator)}, creatorShare: ${(p / 100).toFixed(3)}`;
+    checks.push(p > 10 ? result(devBase, "tehlikeli", 10, text, tech) : result(devBase, "gecti", 0, text, tech));
   }
 
   // Bağlantılı cüzdanlar: en büyük holderlardan aynı kaynaktan fonlananlar.
-  // 3+ cüzdan veya grubun payı > %15 → tehlikeli (20); 2 cüzdan → dikkat (5).
+  // 3+ cüzdan veya grubun payı > %15 → tehlikeli (20, skor en az 61); 2 cüzdan → dikkat (5).
   const bundleBase = { id: "bundle", group: "dagilim", title: "Bağlantılı cüzdanlar" } as const;
   if (!f.bundle) {
-    checks.push(unknown(bundleBase, "Cüzdan bağlantıları 12 saniye içinde incelenemedi."));
+    checks.push(unknown(bundleBase, {
+      tr: "Cüzdan bağlantıları 12 saniye içinde incelenemedi.",
+      en: "Wallet links could not be checked within 12 seconds.",
+    }));
   } else {
     const b = f.bundle;
-    const g = b.groups[0]; // en kalabalık grup
     const danger = b.groups.find(isDangerousGroup);
-    const worst = danger ?? g;
-    const skippedNote =
-      (b.partial ? " (Süre dolduğu için kısmi inceleme: sadece bitirilebilen cüzdanlara bakıldı.)" : "") +
-      (b.skipped ? ` (${b.skipped} cüzdan çok aktif olduğu ya da okunamadığı için incelenmedi.)` : "");
-    const detail = worst
-      ? `En büyük holderlardan ${worst.wallets.length} cüzdan aynı kaynaktan fonlanmış (doğrudan ya da bir ara cüzdan üzerinden), toplam payları %${fmt(worst.pct)}.${skippedNote}`
-      : "";
+    const worst = danger ?? b.groups[0];
+    const tech = [
+      `walletsChecked: ${b.walletsChecked}`,
+      `skipped: ${b.skipped}`,
+      worst ? `linkedWallets: ${worst.wallets.length}, linkedShare: ${(worst.pct / 100).toFixed(3)}, funder: ${short(worst.funder)}` : "linkedWallets: 0",
+      b.partial ? "partial: true" : "",
+    ].filter(Boolean).join(", ");
+    const linked = (n: number, p: number): Text => ({
+      tr: `${n} cüzdan aynı kaynaktan fonlanmış (toplam pay %${fmt(p)}).`,
+      en: `${n} wallets were funded from the same source (${fmtEn(p)}% of the supply combined).`,
+    });
     if (b.walletsChecked === 0 && !worst) {
-      checks.push(unknown(bundleBase, "İncelenebilecek holder cüzdanı bulunamadı." + skippedNote));
+      checks.push(unknown(bundleBase, { tr: "İncelenebilecek holder cüzdanı bulunamadı.", en: "No holder wallets could be inspected." }));
     } else if (danger) {
-      checks.push({ ...bundleBase, status: "tehlikeli", points: 20, detail });
+      checks.push(result(bundleBase, "tehlikeli", 20, linked(danger.wallets.length, danger.pct), tech));
     } else if (worst) {
-      checks.push({ ...bundleBase, status: "dikkat", points: 5, detail });
+      checks.push(result(bundleBase, "dikkat", 5, linked(worst.wallets.length, worst.pct), tech));
     } else {
-      checks.push({ ...bundleBase, status: "gecti", points: 0,
-        detail: `En büyük ${b.walletsChecked} holder cüzdanında aynı kaynaktan fonlanan cüzdan bulunamadı.${skippedNote}` });
+      checks.push(result(bundleBase, "gecti", 0, {
+        tr: "Büyük holderlar arasında aynı kaynaktan fonlanan cüzdan bulunamadı.",
+        en: "No large holders were funded from the same source.",
+      }, tech));
     }
   }
 
   // ---- 3. Alım-satım ----
   const sellBase = { id: "sell_test", group: "alim_satim", title: "Satış testi" } as const;
-  if (!f.sell) checks.push(unknown(sellBase, "Jupiter'e ulaşılamadı."));
+  if (!f.sell) checks.push(unknown(sellBase, { tr: "Jupiter'e ulaşılamadı.", en: "Jupiter could not be reached." }));
   else if (!f.sell.routeFound) {
-    checks.push({ ...sellBase, status: "tehlikeli", points: 30,
-      detail: "Jupiter satış rotası bulamadı: alınıp satılamayan bir token (honeypot) olabilir." });
+    checks.push(result(sellBase, "tehlikeli", 30, {
+      tr: "Jupiter satış rotası bulamadı: alınıp satılamayan bir token (honeypot) olabilir.",
+      en: "Jupiter found no sell route: this may be a token you can buy but not sell (honeypot).",
+    }, "sellRoute: none"));
   } else {
     const impact = f.sell.priceImpactPct;
+    const tech = `sellRoute: found, priceImpactPct: ${impact === null ? "null" : impact.toFixed(2)}`;
     checks.push(
       impact !== null && impact > 10
-        ? { ...sellBase, status: "dikkat", points: 0,
-            detail: `Satılabiliyor, ama ~10 $'lık satış fiyatı %${fmt(impact)} düşürüyor.` }
-        : { ...sellBase, status: "gecti", points: 0, detail: "Jupiter üzerinden satış rotası bulundu." },
+        ? result(sellBase, "dikkat", 0, {
+            tr: `Satılabiliyor, ama ~10 $'lık satış fiyatı %${fmt(impact)} düşürüyor.`,
+            en: `It can be sold, but a ~$10 sale moves the price down ${fmtEn(impact)}%.`,
+          }, tech)
+        : result(sellBase, "gecti", 0, {
+            tr: "Jupiter üzerinden satış rotası bulundu.",
+            en: "A sell route was found on Jupiter.",
+          }, tech),
     );
   }
 
   const liqBase = { id: "liquidity", group: "alim_satim", title: "Likidite" } as const;
   if (!f.market) {
-    checks.push({ ...liqBase, status: "tehlikeli", points: 10, detail: "Hiçbir DEX'te işlem gören bir havuz yok." });
+    checks.push(result(liqBase, "tehlikeli", 10, {
+      tr: "Hiçbir DEX'te işlem gören bir havuz yok.",
+      en: "No pool is trading on any DEX.",
+    }, "liquidityUsd: 0"));
   } else {
     const l = f.market.liquidityUsd;
+    const tech = `liquidityUsd: ${Math.round(l)}`;
     checks.push(
       l < 10_000
-        ? { ...liqBase, status: "tehlikeli", points: 10, detail: `Likidite sadece ${usd(l)}.` }
-        : { ...liqBase, status: "gecti", points: 0, detail: `Toplam likidite ${usd(l)}.` },
+        ? result(liqBase, "tehlikeli", 10, { tr: `Havuzda sadece ${usd(l)} likidite var.`, en: `The pool holds only ${usdEn(l)} in liquidity.` }, tech)
+        : result(liqBase, "gecti", 0, { tr: `Havuzda yaklaşık ${usd(l)} likidite var.`, en: `The pool holds about ${usdEn(l)} in liquidity.` }, tech),
     );
   }
 
   const lpBase = { id: "lp_lock", group: "alim_satim", title: "Likidite kilidi" } as const;
   if (!f.lp) checks.push(unknown(lpBase));
   else if (f.lp.bondingCurve) {
-    checks.push({ ...lpBase, status: "gecti", points: 0,
-      detail: "pump.fun eğrisinde: havuzdaki para geliştirici tarafından çekilemez." });
+    checks.push(result(lpBase, "gecti", 0, {
+      tr: "pump.fun eğrisinde: havuzdaki para geliştirici tarafından çekilemez.",
+      en: "On the pump.fun curve: the developer cannot pull the pool's funds.",
+    }, "bondingCurve: true"));
   } else if (f.lp.lockedPct === null) {
-    checks.push(unknown(lpBase, "Kilit bilgisi bulunamadı."));
+    checks.push(unknown(lpBase, { tr: "Kilit bilgisi bulunamadı.", en: "No lock information was found." }));
   } else {
     const p = f.lp.lockedPct;
+    const tech = `lpLockedPct: ${p}`;
     checks.push(
-      p >= 90 ? { ...lpBase, status: "gecti", points: 0, detail: `Kilitli/yakılmış likidite oranı: %${fmt(p)}.` }
-      : { ...lpBase, status: "tehlikeli", points: 15,
-          detail: `Kilitli likidite oranı sadece %${fmt(p)}: havuz çekilebilir (rug pull riski).` },
+      p >= 90
+        ? result(lpBase, "gecti", 0, { tr: `Kilitli veya yakılmış likidite oranı: %${fmt(p)}.`, en: `${fmtEn(p)}% of the liquidity is locked or burned.` }, tech)
+        : result(lpBase, "tehlikeli", 15, {
+            tr: `Kilitli likidite oranı sadece %${fmt(p)}: havuz çekilebilir (rug pull riski).`,
+            en: `Only ${fmtEn(p)}% of the liquidity is locked: the pool can be pulled (rug pull risk).`,
+          }, tech),
     );
   }
 
@@ -150,33 +214,67 @@ export function buildChecks(f: Facts): CheckResult[] {
   if (!created) checks.push(unknown(ageBase));
   else {
     const hours = (Date.now() - new Date(created).getTime()) / 3_600_000;
-    const label = hours < 48 ? `${fmt(hours)} saat` : `${fmt(hours / 24)} gün`;
+    const tr = hours < 48 ? `${fmt(hours)} saat` : `${fmt(hours / 24)} gün`;
+    const en = hours < 48 ? `${fmtEn(hours)} hours` : `${fmtEn(hours / 24)} days`;
+    const tech = `createdAt: ${created.slice(0, 10)}`;
     checks.push(
       hours < 24
-        ? { ...ageBase, status: "dikkat", points: 5, detail: `Token ${label} önce oluşturuldu, çok yeni.` }
-        : { ...ageBase, status: "gecti", points: 0, detail: `Token ${label} önce oluşturuldu.` },
+        ? result(ageBase, "dikkat", 5, { tr: `Token ${tr} önce oluşturuldu, çok yeni.`, en: `The token was created ${en} ago; it is very new.` }, tech)
+        : result(ageBase, "gecti", 0, { tr: `Token ${tr} önce oluşturuldu.`, en: `The token was created ${en} ago.` }, tech),
     );
   }
 
   const webBase = { id: "website", group: "proje", title: "Resmi site" } as const;
-  if (!f.website) checks.push(unknown(webBase, "Site analizi yapılmadı (AI kapalı ya da site okunamadı)."));
-  else if (!f.website.url) checks.push({ ...webBase, status: "dikkat", points: 0, detail: "Resmi bir site yok." });
-  else {
-    const w = f.website;
-    const flags = [
-      w.contradictsChain && "sitedeki iddialar zincirle çelişiyor",
-      w.unrealisticPromises && "gerçekçi olmayan kazanç vaatleri var",
-      w.templateText && "içerik jenerik/şablon",
-    ].filter(Boolean) as string[];
-    const notes = w.notes.length ? " " + w.notes.join(" ") : "";
+  if (!f.website) {
+    checks.push(unknown(webBase, {
+      tr: "Site analizi yapılmadı (AI kapalı ya da site okunamadı).",
+      en: "The website was not analysed (AI disabled or the site could not be read).",
+    }));
+  } else if (!f.website.url) {
+    checks.push(result(webBase, "dikkat", 0, { tr: "Resmi bir site yok.", en: "There is no official website." }, "website: null"));
+  } else {
+    const flags = siteFlags(f);
+    const tech = `flags: ${flags.length}`;
     checks.push(
       flags.length
-        ? { ...webBase, status: "tehlikeli", points: 10, detail: cap(flags.join(", ")) + "." + notes }
-        : { ...webBase, status: "gecti", points: 0, detail: "Belirgin bir kırmızı bayrak yok." + notes },
+        ? result(webBase, "tehlikeli", 10, {
+            tr: cap(flags.map((x) => x.tr).join(", ")) + ".",
+            en: cap(flags.map((x) => x.en).join(", ")) + ".",
+          }, tech)
+        : result(webBase, "gecti", 0, {
+            tr: "Şüpheli bir vaat bulunmadı; sitede belirgin bir kırmızı bayrak yok.",
+            en: "No suspicious promises found; no obvious red flags on the website.",
+          }, tech),
     );
   }
 
   return checks.map((c) => ({ ...c, titleEn: TITLE_EN[c.id] }));
+}
+
+/** Sitedeki 3 sabit kırmızı bayrak (Gemini işaretler, puanı score.ts verir). */
+function siteFlags(f: Facts): Text[] {
+  const w = f.website;
+  if (!w || !w.url) return [];
+  return [
+    w.contradictsChain && { tr: "sitedeki iddialar zincirle çelişiyor", en: "claims on the site contradict on-chain data" },
+    w.unrealisticPromises && { tr: "gerçekçi olmayan kazanç vaatleri var", en: "there are unrealistic profit promises" },
+    w.templateText && { tr: "içerik jenerik/şablon", en: "the content is generic or templated" },
+  ].filter(Boolean) as Text[];
+}
+
+/**
+ * "Web sitesinde bulunanlar" paneli: önce sabit kırmızı bayraklar, sonra AI gözlemleri.
+ * Bayrak yoksa en başta "Şüpheli bir vaat bulunmadı." yazar. Site incelenmediyse boş döner.
+ */
+export function websiteNotes(f: Facts): WebsiteNote[] {
+  const w = f.website;
+  if (!w) return [];
+  if (!w.url) return [{ text: "Resmi bir site yok.", textEn: "There is no official website.", level: "warn" }];
+  const flags = siteFlags(f).map((x): WebsiteNote => ({ text: cap(x.tr) + ".", textEn: cap(x.en) + ".", level: "warn" }));
+  const head: WebsiteNote[] = flags.length
+    ? flags
+    : [{ text: "Şüpheli bir vaat bulunmadı.", textEn: "No suspicious promises found.", level: "ok" }];
+  return [...head, ...w.notes];
 }
 
 // Arayüzün İngilizce modunda gösterilen başlıklar.

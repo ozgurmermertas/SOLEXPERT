@@ -1,5 +1,6 @@
 // Kontrol modüllerinin topladığı HAM gerçekler.
 // Puanlama bu gerçeklerden lib/scoring/score.ts içinde yapılır.
+import type { HolderDistribution, WebsiteNote } from "./types";
 
 export interface Token2022Flags {
   transferFeeBps: number;          // 0 = vergi yok
@@ -30,6 +31,7 @@ export interface MetadataFacts {
 export interface HolderFacts {
   top10Pct: number;   // 0–100
   largestPct: number; // en büyük tek hesap
+  distribution: HolderDistribution;
 }
 
 export interface CreatorFacts {
@@ -76,7 +78,7 @@ export interface WebsiteFacts {
   templateText: boolean;      // jenerik/şablon metin
   unrealisticPromises: boolean; // "garanti 100x" vb.
   contradictsChain: boolean;  // sitedeki iddia zincirle çelişiyor
-  notes: string[];            // kısa Türkçe gözlemler
+  notes: WebsiteNote[];       // kısa gözlemler (TR + EN), "Web sitesinde bulunanlar" paneli
 }
 
 /** Her alan null olabilir: o kontrol başarısız olduysa "bilinmiyor" sayılır. */
