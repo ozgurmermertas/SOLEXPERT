@@ -95,7 +95,38 @@
   const ICON = { danger: "✕", warn: "!", ok: "✓" };
   const COLOR = { danger: "var(--danger)", warn: "var(--warn)", ok: "var(--ok)" };
 
+  // ---------- Peak Chart sonuç kartları ----------
+  const TONE = { danger: "#ff4d5e", warn: "#f0a020", ok: "#2ec99a" };
+  let charts = [];
+  const chartWidth = () => {
+    const row = $("#peak-row"), w = row.clientWidth || 1000;
+    if (w < 640) return Math.min(380, w);            // telefonda alt alta
+    if (w < 1000) return Math.floor((w - 24) / 2);   // tablette 2'li
+    return Math.min(380, Math.floor((w - 48) / 3));  // masaüstünde 3'lü
+  };
+  function chartOpts(c) {
+    const h = c.hover || {}, loc = L.lang === "en" ? "en-US" : "tr-TR";
+    return {
+      data: c.data || [0, 0], labels: c.labels || null, value: +c.value || 0,
+      prefix: c.prefix || "", suffix: c.suffix || "", decimals: c.decimals | 0,
+      title: c.title || "", caption: c.caption || "", status: c.status || "", badge: c.badge || "",
+      trend: c.trend || "none", accent: TONE[c.tone] || c.accent || "#4f8ef7", locale: loc, width: chartWidth(),
+      formatValue: (v) => (h.prefix || "") + v.toLocaleString(loc, { minimumFractionDigits: h.decimals | 0, maximumFractionDigits: h.decimals | 0 }) + (h.suffix || ""),
+    };
+  }
+  function renderCharts(list) {
+    const row = $("#peak-row");
+    row.classList.toggle("hidden", !list.length);
+    if (!window.PeakChart) return;
+    // aynı sayıda grafik varsa yeniden kurmak yerine güncelle: çizgi yumuşakça yeni veriye geçer
+    if (charts.length === list.length && charts.length) { list.forEach((c, i) => charts[i].update(chartOpts(c))); return; }
+    charts.forEach((c) => c.destroy()); charts = [];
+    list.forEach((c) => charts.push(window.PeakChart.mount(row, chartOpts(c))));
+  }
+  window.addEventListener("resize", () => { const w = chartWidth(); charts.forEach((c) => c.resize(w)); });
+
   function render(r) {
+    $("#report").classList.remove("hidden"); // grafik genişliği doğru ölçülsün diye önce görünür yap
     const score = Math.max(0, Math.min(100, r.riskScore | 0));
     const verdict = r.verdict || (score >= 66 ? "danger" : score >= 33 ? "warn" : "ok");
     const label = r.verdictLabel || L.t("verdict." + verdict);
@@ -111,23 +142,36 @@
     const v = $("#verdict"); v.textContent = label; v.className = "verdict " + verdict;
     $("#summary").textContent = r.summary || "";
 
+    const STATUS = { danger: T("Riskli", "Risky"), warn: T("Dikkat", "Caution"), ok: T("Temiz", "Clear") };
     $("#checks").innerHTML = (r.checks || []).map((c) => `
-      <div class="check ${esc(c.status)}">
-        <h4><span>${ICON[c.status] || "•"}</span>${esc(c.label)}</h4>
+      <article class="check ${esc(c.status)}">
+        <header>
+          <span class="check-pill"><i></i>${esc(STATUS[c.status] || "")}</span>
+          <span class="check-ico" aria-hidden="true">${ICON[c.status] || "•"}</span>
+        </header>
+        <h4>${esc(c.label)}</h4>
         <p>${esc(c.detail)}</p>
         ${c.raw ? `<details><summary>${esc(L.t("rep.tech"))}</summary><code>${esc(c.raw)}</code></details>` : ""}
-      </div>`).join("");
+      </article>`).join("");
 
-    $("#holders").innerHTML = (r.holders || []).map((h) => `
-      <div class="hbar ${h.pct >= 25 && !/diğer|other|everyone/i.test(h.label) ? "big" : ""}">
-        <span>${esc(h.label)}</span><div class="track"><div class="fill" data-w="${+h.pct}"></div></div><b>${L.lang === "en" ? +h.pct + "%" : "%" + +h.pct}</b>
-      </div>`).join("");
-    setTimeout(() => document.querySelectorAll(".hbar .fill").forEach((f) => (f.style.width = f.dataset.w + "%")), 100);
+    renderCharts(r.charts || []);
 
-    $("#flags").innerHTML = (r.siteFlags || []).map((f) => `<li class="${f.level === "ok" ? "clean" : ""}">${esc(f.text)}</li>`).join("")
-      || `<li class="clean">${esc(L.t("rep.noSite"))}</li>`;
+    // Site bulguları: kontrol kartlarıyla aynı kart yapısı (rozet + ikon + metin)
+    const FLAG = { warn: T("Şüpheli", "Suspicious"), danger: T("Tehlikeli", "Dangerous"), ok: T("Temiz", "Clear") };
+    const flags = (r.siteFlags || []).length ? r.siteFlags : [{ text: L.t("rep.noSite"), level: "ok" }];
+    $("#flags").innerHTML = flags.map((f) => {
+      const lv = ["warn", "danger", "ok"].includes(f.level) ? f.level : "warn";
+      const quote = /^["“]/.test(f.text || "");
+      return `
+      <article class="check flag ${lv}">
+        <header>
+          <span class="check-pill"><i></i>${esc(FLAG[lv])}</span>
+          <span class="check-ico" aria-hidden="true">${ICON[lv] || "!"}</span>
+        </header>
+        <p class="flag-text${quote ? " quote" : ""}">${esc(f.text)}</p>
+      </article>`;
+    }).join("");
 
-    $("#report").classList.remove("hidden");
     window.Mascot.setReport(r.summary, r.audioUrl);
     window.Mascot.say(verdict === "danger"
       ? T("Bu tokendan uzak durun! 'Raporu dinle' butonuna basın, anlatayım.", "Stay away from this token! Press 'Listen to the report' and I'll explain.")

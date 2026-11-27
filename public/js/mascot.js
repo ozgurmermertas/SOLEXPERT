@@ -18,8 +18,10 @@ window.Mascot = (() => {
   const T = (tr, en) => (L.lang === "en" ? en : tr);
 
   // ---- Kaydırmayı takip eden yay hareketi ----
-  let y = window.innerHeight * 0.55, vy = 0, lastScroll = window.scrollY, lag = 0;
+  // Hareket bitince döngü durur; kaydırma, pencere boyutu ya da panel değişince yeniden başlar.
+  let y = window.innerHeight * 0.55, vy = 0, lastScroll = window.scrollY, lag = 0, physRaf = 0, lastTilt = "";
   function physics() {
+    physRaf = 0;
     const s = window.scrollY;
     lag += (lastScroll - s) * 0.6;
     lastScroll = s;
@@ -30,12 +32,18 @@ window.Mascot = (() => {
     vy += (target - y) * 0.08;
     vy *= 0.78;
     y += vy;
-    el.style.transform = `translateY(${y}px)`;
-    owl.style.rotate = `${Math.max(-12, Math.min(12, vy * 0.6))}deg`;
+    el.style.transform = `translate3d(0, ${y.toFixed(1)}px, 0)`;
+    const tilt = `${Math.max(-12, Math.min(12, vy * 0.6)).toFixed(1)}deg`;
+    if (tilt !== lastTilt) { owl.style.rotate = tilt; lastTilt = tilt; }
     el.classList.toggle("flying", Math.abs(vy) > 2.5);
-    requestAnimationFrame(physics);
+    const settled = Math.abs(vy) < 0.03 && Math.abs(target - y) < 0.3 && Math.abs(lag) < 0.3;
+    if (!settled) physRaf = requestAnimationFrame(physics);
   }
-  requestAnimationFrame(physics);
+  const wake = () => { if (!physRaf) physRaf = requestAnimationFrame(physics); };
+  window.addEventListener("scroll", wake, { passive: true });
+  window.addEventListener("resize", wake);
+  new MutationObserver(wake).observe(panel, { attributes: true, attributeFilter: ["class"] });
+  wake();
 
   // ---- Gözler fareyi izler, göz kırpar ----
   window.addEventListener("mousemove", (e) => {

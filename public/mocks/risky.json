@@ -7,24 +7,282 @@
   "verdictLabel": "UZAK DUR",
   "summary": "Bu token riskli. Yaratıcısı istediği an yeni token basabiliyor ve satışınızı dondurabiliyor. Ayrıca arzın yüzde yetmiş dördü yalnızca on cüzdanda. Web sitesinde garanti getiri vaatleri var.",
   "checks": [
-    { "id": "mint_authority", "label": "Yeni para basılabilir mi?", "status": "danger", "detail": "Evet. Mint yetkisi hâlâ açık; yaratıcı istediği kadar yeni token basabilir.", "raw": "mintAuthority: 7xKq…9fPz" },
-    { "id": "freeze_authority", "label": "Satışın dondurulabilir mi?", "status": "danger", "detail": "Evet. Freeze yetkisi açık; cüzdanın dondurulursa tokenı satamazsın.", "raw": "freezeAuthority: 7xKq…9fPz" },
-    { "id": "top_holders", "label": "Para kimin elinde?", "status": "danger", "detail": "İlk 10 cüzdan arzın %74'ünü tutuyor.", "raw": "top10Share: 0.74" },
-    { "id": "liquidity", "label": "Likidite yeterli mi?", "status": "warn", "detail": "Havuzda yaklaşık 18.000 $ likidite var ve kilitli değil.", "raw": "liquidityUsd: 18000, locked: false" },
-    { "id": "website", "label": "Web sitesi güvenilir mi?", "status": "warn", "detail": "Sitede 'garanti' ve '100x' gibi gerçekçi olmayan vaatler bulundu.", "raw": "flags: 3" }
+    {
+      "id": "mint_authority",
+      "label": "Yeni para basılabilir mi?",
+      "status": "danger",
+      "detail": "Evet. Mint yetkisi hâlâ açık; yaratıcı istediği kadar yeni token basabilir.",
+      "raw": "mintAuthority: 7xKq…9fPz"
+    },
+    {
+      "id": "freeze_authority",
+      "label": "Satışın dondurulabilir mi?",
+      "status": "danger",
+      "detail": "Evet. Freeze yetkisi açık; cüzdanın dondurulursa tokenı satamazsın.",
+      "raw": "freezeAuthority: 7xKq…9fPz"
+    },
+    {
+      "id": "top_holders",
+      "label": "Para kimin elinde?",
+      "status": "danger",
+      "detail": "İlk 10 cüzdan arzın %74'ünü tutuyor.",
+      "raw": "top10Share: 0.74"
+    },
+    {
+      "id": "liquidity",
+      "label": "Likidite yeterli mi?",
+      "status": "warn",
+      "detail": "Havuzda yaklaşık 18.000 $ likidite var ve kilitli değil.",
+      "raw": "liquidityUsd: 18000, locked: false"
+    },
+    {
+      "id": "website",
+      "label": "Web sitesi güvenilir mi?",
+      "status": "warn",
+      "detail": "Sitede 'garanti' ve '100x' gibi gerçekçi olmayan vaatler bulundu.",
+      "raw": "flags: 3"
+    }
   ],
   "holders": [
-    { "label": "Cüzdan #1", "pct": 41 },
-    { "label": "Cüzdan #2", "pct": 14 },
-    { "label": "Cüzdan #3", "pct": 9 },
-    { "label": "Cüzdan #4–10", "pct": 10 },
-    { "label": "Diğer herkes", "pct": 26 }
+    {
+      "label": "Cüzdan #1",
+      "pct": 41
+    },
+    {
+      "label": "Cüzdan #2",
+      "pct": 14
+    },
+    {
+      "label": "Cüzdan #3",
+      "pct": 9
+    },
+    {
+      "label": "Cüzdan #4–10",
+      "pct": 10
+    },
+    {
+      "label": "Diğer herkes",
+      "pct": 26
+    }
   ],
   "siteFlags": [
-    { "text": "\"Garanti 100x getiri, kaçırma!\"", "level": "warn" },
-    { "text": "\"Sadece 24 saat: ilk alanlara %500 bonus\"", "level": "warn" },
-    { "text": "Ekip ve yol haritası sayfası başka bir projeyle neredeyse birebir aynı.", "level": "warn" }
+    {
+      "text": "\"Garanti 100x getiri, kaçırma!\"",
+      "level": "warn"
+    },
+    {
+      "text": "\"Sadece 24 saat: ilk alanlara %500 bonus\"",
+      "level": "warn"
+    },
+    {
+      "text": "Ekip ve yol haritası sayfası başka bir projeyle neredeyse birebir aynı.",
+      "level": "warn"
+    }
   ],
   "audioUrl": null,
-  "createdAt": "2026-11-26T12:00:00Z"
+  "createdAt": "2026-11-26T12:00:00Z",
+  "charts": [
+    {
+      "id": "price",
+      "tone": "danger",
+      "status": "Son 7 gün",
+      "badge": "7G",
+      "title": "Zirveden fiyat değişimi",
+      "value": 92,
+      "prefix": "−%",
+      "suffix": "",
+      "decimals": 0,
+      "trend": "down",
+      "caption": "Hızlı yükseliş, ardından çöküş: klasik pump-and-dump izi.",
+      "data": [
+        0.0021,
+        0.0023,
+        0.0026,
+        0.0031,
+        0.0038,
+        0.0049,
+        0.0066,
+        0.0089,
+        0.0121,
+        0.0158,
+        0.0184,
+        0.019,
+        0.0172,
+        0.0121,
+        0.0068,
+        0.0041,
+        0.0029,
+        0.0024,
+        0.0021,
+        0.0019,
+        0.0018,
+        0.0017,
+        0.0016,
+        0.0016,
+        0.0015,
+        0.0015,
+        0.0015,
+        0.0015
+      ],
+      "labels": [
+        "Gün 1 · 00:00",
+        "Gün 1 · 06:00",
+        "Gün 1 · 12:00",
+        "Gün 1 · 18:00",
+        "Gün 2 · 00:00",
+        "Gün 2 · 06:00",
+        "Gün 2 · 12:00",
+        "Gün 2 · 18:00",
+        "Gün 3 · 00:00",
+        "Gün 3 · 06:00",
+        "Gün 3 · 12:00",
+        "Gün 3 · 18:00",
+        "Gün 4 · 00:00",
+        "Gün 4 · 06:00",
+        "Gün 4 · 12:00",
+        "Gün 4 · 18:00",
+        "Gün 5 · 00:00",
+        "Gün 5 · 06:00",
+        "Gün 5 · 12:00",
+        "Gün 5 · 18:00",
+        "Gün 6 · 00:00",
+        "Gün 6 · 06:00",
+        "Gün 6 · 12:00",
+        "Gün 6 · 18:00",
+        "Gün 7 · 00:00",
+        "Gün 7 · 06:00",
+        "Gün 7 · 12:00",
+        "Gün 7 · 18:00"
+      ],
+      "hover": {
+        "prefix": "$",
+        "decimals": 4
+      }
+    },
+    {
+      "id": "holders",
+      "tone": "danger",
+      "status": "Canlı",
+      "badge": "İlk 20",
+      "title": "İlk 10 cüzdanın payı",
+      "value": 74,
+      "prefix": "%",
+      "suffix": "",
+      "decimals": 0,
+      "trend": "none",
+      "caption": "Arzın dörtte üçü 10 cüzdanda. Toplu satışta fiyat çöker.",
+      "data": [
+        41,
+        14,
+        9,
+        3,
+        2,
+        1.5,
+        1.2,
+        1,
+        0.8,
+        0.5,
+        0.5,
+        0.5,
+        0.4,
+        0.4,
+        0.3,
+        0.3,
+        0.3,
+        0.3,
+        0.2,
+        0.2
+      ],
+      "labels": [
+        "1. cüzdan",
+        "2. cüzdan",
+        "3. cüzdan",
+        "4. cüzdan",
+        "5. cüzdan",
+        "6. cüzdan",
+        "7. cüzdan",
+        "8. cüzdan",
+        "9. cüzdan",
+        "10. cüzdan",
+        "11. cüzdan",
+        "12. cüzdan",
+        "13. cüzdan",
+        "14. cüzdan",
+        "15. cüzdan",
+        "16. cüzdan",
+        "17. cüzdan",
+        "18. cüzdan",
+        "19. cüzdan",
+        "20. cüzdan"
+      ],
+      "hover": {
+        "prefix": "%",
+        "decimals": 1
+      }
+    },
+    {
+      "id": "liquidity",
+      "tone": "warn",
+      "status": "Son 7 gün",
+      "badge": "7G",
+      "title": "Havuz likiditesi",
+      "value": 18,
+      "prefix": "$",
+      "suffix": "K",
+      "decimals": 0,
+      "trend": "down",
+      "caption": "Zirvedeki 240 bin dolardan 18 bine indi ve kilitli değil.",
+      "data": [
+        62,
+        118,
+        176,
+        224,
+        240,
+        236,
+        198,
+        151,
+        96,
+        58,
+        41,
+        33,
+        27,
+        24,
+        22,
+        21,
+        20,
+        19,
+        19,
+        18,
+        18
+      ],
+      "labels": [
+        "Gün 1",
+        "Gün 1",
+        "Gün 1",
+        "Gün 2",
+        "Gün 2",
+        "Gün 2",
+        "Gün 3",
+        "Gün 3",
+        "Gün 3",
+        "Gün 4",
+        "Gün 4",
+        "Gün 4",
+        "Gün 5",
+        "Gün 5",
+        "Gün 5",
+        "Gün 6",
+        "Gün 6",
+        "Gün 6",
+        "Gün 7",
+        "Gün 7",
+        "Gün 7"
+      ],
+      "hover": {
+        "prefix": "$",
+        "suffix": "K",
+        "decimals": 0
+      }
+    }
+  ]
 }

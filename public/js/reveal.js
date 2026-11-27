@@ -2,7 +2,7 @@
 // Ekrana her girişte tekrar oynar.
 // Bir grubun kartları sırayla soldan, sağdan gelir ve her biri biraz gecikir.
 window.SolReveal = (() => {
-  const GROUPS = [".cards .card", ".stats .stat", "#checks .check", ".report-grid .panel", ".partners .partner", ".steps .step", ".section-head"];
+  const GROUPS = [".cards .card", ".stats .stat", "#checks .check", "#flags .flag", ".partners .partner", ".steps .step", ".section-head"];
   const io = new IntersectionObserver((entries) => {
     entries.forEach((en) => {
       // Her girişte gelir, ekrandan çıkınca sıfırlanır: animasyon her seferinde tekrarlanır
