@@ -20,6 +20,8 @@ Hackathon: Dev3pack (Solana), 27–29 Kasım 2026. Sponsorlar: Solana, Firecrawl
 4. Bir kontrol hata verirse tüm analiz çökmesin: o kontrol `durum: "bilinmiyor"` döner.
 5. API anahtarları sadece `.env.local` içinde. Asla commit'lenmez.
 6. Arayüz metinleri Türkçe. Kod (değişken/fonksiyon adları) İngilizce olabilir.
+7. AI özeti asla "güvenli" / "safe" demez (TR ve EN). Düşük riskte: "temel kontrollerde belirgin
+   bir risk bulunamadı, ama bu bir garanti değil". `lib/ai/report.ts` yasaklı kelimeyi yakalarsa yeniden üretir.
 
 ## Teknoloji
 - Next.js (App Router) + TypeScript
@@ -49,6 +51,7 @@ lib/
     mint.ts                 (basma/dondurma yetkisi + Token-2022 ayarları)
     metadata.ts             (isim, sembol, resmi site/twitter/telegram linkleri)
     holders.ts              (ilk 10 holder + oluşturan cüzdan ve payı)
+    bundle.ts               (bağlantılı cüzdanlar: aynı kaynaktan fonlanan büyük holderlar)
     market.ts               (DexScreener: likidite, yaş, linkler)
     sellTest.ts             (Jupiter satış teklifi)
     lpLock.ts               (likidite kilidi: pump.fun eğrisi / RugCheck)
@@ -61,7 +64,8 @@ API.md                      ← Frontend'in backend'i nasıl çağıracağı
 
 ## Yapılacaklar (TODO)
 - [ ] `attestationTx`: rapor hash'ini devnet'e memo olarak yazmak (@solana/web3.js + devnet cüzdanı)
-- [ ] Supabase ile rapor cache'i (aynı token 10 dk içinde tekrar sorulursa)
+- [x] Rapor cache'i (10 dk, bellek içi — `lib/analyze.ts`)
+- [ ] Supabase ile kalıcı rapor cache'i (sunucu yeniden başlasa da kalsın)
 - [ ] (Opsiyonel) X API ile bot hesap tespiti
 
 ## Kontroller ve puanlar (risk puanı; toplam 100'de kesilir)
@@ -72,6 +76,7 @@ API.md                      ← Frontend'in backend'i nasıl çağıracağı
 | token2022 | Gizli ayarlar | Transfer vergisi veya permanent delegate | 20 |
 | top10 | İlk 10 holder payı | >%50 → 15, %30–50 → 7 | 15 |
 | dev_share | Geliştirici payı | >%10 | 10 |
+| bundle | Bağlantılı cüzdanlar (EN: Linked wallets) | Aynı kaynaktan fonlanan 3+ büyük holder **veya** grubun payı >%15 → 20 ve skor en az 61; 2 cüzdan → dikkat, 5 | 20 (+taban 61) |
 | sell_test | Satılabilirlik | Satış rotası yok | 30 |
 | liquidity | Likidite | < 10.000 $ | 10 |
 | lp_lock | Likidite kilidi | LP kilitli/yakılmış değil | 15 |
@@ -79,6 +84,22 @@ API.md                      ← Frontend'in backend'i nasıl çağıracağı
 | website | Resmi site | Kopya içerik / abartılı vaat / zincirle çelişki | 10 |
 
 Skor aralıkları: 0–30 düşük (yeşil), 31–60 dikkat (sarı), 61–100 yüksek (kırmızı).
+Özel kurallar:
+- `bundle` "tehlikeli" ise **skor en az 61** olur (dolayısıyla seviye yüksek).
+- `sell_test`, `liquidity` veya `top10` "bilinmiyor" ise seviye en az **dikkat** olur (skor değişmez).
+
+`bundle` yöntemi (`lib/onchain/bundle.ts`): en büyük 12 token hesabı → sahip cüzdanlar
+(havuz/program hesapları çıkarılır: sadece System Program'a ait cüzdanlar) → 2 adımlı iz:
+1. adım = cüzdanın ilk işleminde ona SOL gönderen (yoksa o işlemi ödeyen) hesap,
+2. adım = 1. adımın kendi ilk işlemindeki fonlayanı. Ortak 1. adımı olan cüzdanlar aynı gruba girer.
+2. adım kaynakları ve 1000+ işlemli 1. adım kaynakları (borsa/bot olabilir) sadece ilk işlemleri
+birbirine ≤ 1 saat olan cüzdanları bağlar. 1000+ işlemli holder cüzdanı atlanır.
+Aynı anda en fazla 3 RPC isteği (Helius 429'u azaltmak için); tüm kontrol en fazla 12 sn.
+Süre dolunca o ana kadar incelenenlerde tehlikeli grup varsa kısmi sonuç kullanılır, yoksa "bilinmiyor".
+`lib/http.ts`: Helius 429 / "overloaded" dönerse istek 3 kez tekrar denenir.
+
+Önbellek: `analyzeToken` sonucu 10 dk bellekte tutulur (adres + AI açık/kapalı + dil).
+Aynı anda gelen aynı istekler tek analizi paylaşır. Sunucu yeniden başlarsa boşalır.
 Büyük bir borsada listeliyse rapora olumlu sinyal olarak yazılır (skoru düşürmez).
 
 ## Git kuralları

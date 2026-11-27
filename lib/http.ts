@@ -22,13 +22,28 @@ export class HttpError extends Error {
   }
 }
 
+// Helius hız limiti (429) dolunca bu aralıklarla tekrar denenir (ücretsiz katmanda sık olur).
+const RATE_LIMIT_BACKOFF_MS = [300, 700, 1500];
+
 /** Helius üzerinden Solana JSON-RPC çağrısı (standart RPC ve DAS metotları). */
 export async function rpc<T>(method: string, params: unknown): Promise<T> {
-  const json = await fetchJson<{ result?: T; error?: { message: string } }>(heliusRpcUrl(), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: method, method, params }),
-  });
-  if (json.error) throw new Error(`RPC ${method}: ${json.error.message}`);
-  return json.result as T;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const json = await fetchJson<{ result?: T; error?: { message: string } }>(heliusRpcUrl(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: method, method, params }),
+      });
+      if (json.error) {
+        // Helius yoğunken "... overloaded, please try again" döner: hız limiti gibi tekrar denenir.
+        const transient = /overloaded|try again|rate limit/i.test(json.error.message);
+        throw transient ? new HttpError(429, `RPC ${method}: ${json.error.message}`) : new Error(`RPC ${method}: ${json.error.message}`);
+      }
+      return json.result as T;
+    } catch (e) {
+      const wait = RATE_LIMIT_BACKOFF_MS[attempt];
+      if (!(e instanceof HttpError && e.status === 429) || wait === undefined) throw e;
+      await new Promise((r) => setTimeout(r, wait + Math.random() * 200));
+    }
+  }
 }

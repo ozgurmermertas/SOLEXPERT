@@ -9,6 +9,7 @@ export type CheckId =
   | "token2022"
   | "top10"
   | "dev_share"
+  | "bundle"
   | "sell_test"
   | "liquidity"
   | "lp_lock"
@@ -21,6 +22,7 @@ export interface CheckResult {
   id: CheckId;
   group: CheckGroup;
   title: string;        // Örn: "Basma yetkisi"
+  titleEn?: string;     // İngilizce başlık (arayüz EN modunda kullanır). Örn: "Mint authority"
   status: CheckStatus;
   points: number;       // Bu kontrolün skora eklediği risk puanı
   detail: string;       // Kısa, insan okunur açıklama. Örn: "Yetki hâlâ açık"

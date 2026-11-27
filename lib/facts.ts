@@ -38,6 +38,19 @@ export interface CreatorFacts {
   creatorPct: number;       // 0–100
 }
 
+export interface BundleGroup {
+  funder: string;    // cüzdanlara ilk SOL'u gönderen hesap
+  wallets: string[]; // aynı kaynaktan fonlanan büyük holder cüzdanları (en az 2)
+  pct: number;       // bu cüzdanların toplam payı, 0–100
+}
+
+export interface BundleFacts {
+  walletsChecked: number; // ilk işlemi incelenen cüzdan sayısı
+  skipped: number;        // çok aktif (1000+ işlem) veya okunamadığı için atlanan cüzdan
+  groups: BundleGroup[];  // en kalabalık / en büyük pay önce
+  partial?: boolean;      // süre doldu, sonuç sadece o ana kadar incelenen cüzdanlardan
+}
+
 export interface MarketFacts {
   priceUsd: number | null;
   liquidityUsd: number;      // tüm Solana havuzlarının toplamı
@@ -73,6 +86,7 @@ export interface Facts {
   metadata: MetadataFacts | null;
   holders: HolderFacts | null;
   creator: CreatorFacts | null;
+  bundle: BundleFacts | null;
   market: MarketFacts | null;
   sell: SellFacts | null;
   lp: LpFacts | null;

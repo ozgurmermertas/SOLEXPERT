@@ -2,6 +2,7 @@
 // Kural değişirse CLAUDE.md'deki tabloyu da güncelle.
 import type { CheckResult, RiskLevel } from "../types";
 import type { Facts } from "../facts";
+import { isDangerousGroup } from "../onchain/bundle";
 
 const fmt = (n: number) => n.toLocaleString("tr-TR", { maximumFractionDigits: 1 });
 const usd = (n: number) => n.toLocaleString("tr-TR", { maximumFractionDigits: 0 }) + " $";
@@ -69,6 +70,34 @@ export function buildChecks(f: Facts): CheckResult[] {
         ? { ...devBase, status: "tehlikeli", points: 10, detail: `Oluşturan cüzdanın payı: %${fmt(p)}.` }
         : { ...devBase, status: "gecti", points: 0, detail: `Oluşturan cüzdanın payı: %${fmt(p)}.` },
     );
+  }
+
+  // Bağlantılı cüzdanlar: en büyük holderlardan aynı kaynaktan fonlananlar.
+  // 3+ cüzdan veya grubun payı > %15 → tehlikeli (20); 2 cüzdan → dikkat (5).
+  const bundleBase = { id: "bundle", group: "dagilim", title: "Bağlantılı cüzdanlar" } as const;
+  if (!f.bundle) {
+    checks.push(unknown(bundleBase, "Cüzdan bağlantıları 12 saniye içinde incelenemedi."));
+  } else {
+    const b = f.bundle;
+    const g = b.groups[0]; // en kalabalık grup
+    const danger = b.groups.find(isDangerousGroup);
+    const worst = danger ?? g;
+    const skippedNote =
+      (b.partial ? " (Süre dolduğu için kısmi inceleme: sadece bitirilebilen cüzdanlara bakıldı.)" : "") +
+      (b.skipped ? ` (${b.skipped} cüzdan çok aktif olduğu ya da okunamadığı için incelenmedi.)` : "");
+    const detail = worst
+      ? `En büyük holderlardan ${worst.wallets.length} cüzdan aynı kaynaktan fonlanmış (doğrudan ya da bir ara cüzdan üzerinden), toplam payları %${fmt(worst.pct)}.${skippedNote}`
+      : "";
+    if (b.walletsChecked === 0 && !worst) {
+      checks.push(unknown(bundleBase, "İncelenebilecek holder cüzdanı bulunamadı." + skippedNote));
+    } else if (danger) {
+      checks.push({ ...bundleBase, status: "tehlikeli", points: 20, detail });
+    } else if (worst) {
+      checks.push({ ...bundleBase, status: "dikkat", points: 5, detail });
+    } else {
+      checks.push({ ...bundleBase, status: "gecti", points: 0,
+        detail: `En büyük ${b.walletsChecked} holder cüzdanında aynı kaynaktan fonlanan cüzdan bulunamadı.${skippedNote}` });
+    }
   }
 
   // ---- 3. Alım-satım ----
@@ -147,12 +176,38 @@ export function buildChecks(f: Facts): CheckResult[] {
     );
   }
 
-  return checks;
+  return checks.map((c) => ({ ...c, titleEn: TITLE_EN[c.id] }));
 }
 
+// Arayüzün İngilizce modunda gösterilen başlıklar.
+const TITLE_EN: Record<CheckResult["id"], string> = {
+  mint_authority: "Mint authority",
+  freeze_authority: "Freeze authority",
+  token2022: "Hidden settings",
+  top10: "Top 10 holders",
+  dev_share: "Developer share",
+  bundle: "Linked wallets",
+  sell_test: "Sell test",
+  liquidity: "Liquidity",
+  lp_lock: "Liquidity lock",
+  age: "Token age",
+  website: "Official website",
+};
+
+// Bunlardan biri "bilinmiyor" ise seviye en az "dikkat" olur (skor değişmez):
+// satılabilirlik, likidite ve holder dağılımı bilinmeden "düşük risk" denmez.
+const CRITICAL_IF_UNKNOWN: CheckResult["id"][] = ["sell_test", "liquidity", "top10"];
+
+// Arzın koordineli cüzdanlara bölünmesi tek başına ciddi bir işaret: skor en az bu değer olur (= yüksek).
+const BUNDLE_DANGER_MIN_SCORE = 61;
+
 export function computeScore(checks: CheckResult[]): { score: number; level: RiskLevel } {
-  const score = Math.min(100, checks.reduce((s, c) => s + c.points, 0));
-  const level: RiskLevel = score <= 30 ? "dusuk" : score <= 60 ? "dikkat" : "yuksek";
+  let score = Math.min(100, checks.reduce((s, c) => s + c.points, 0));
+  if (checks.some((c) => c.id === "bundle" && c.status === "tehlikeli")) score = Math.max(score, BUNDLE_DANGER_MIN_SCORE);
+  let level: RiskLevel = score <= 30 ? "dusuk" : score <= 60 ? "dikkat" : "yuksek";
+  if (level === "dusuk" && checks.some((c) => c.status === "bilinmiyor" && CRITICAL_IF_UNKNOWN.includes(c.id))) {
+    level = "dikkat";
+  }
   return { score, level };
 }
 

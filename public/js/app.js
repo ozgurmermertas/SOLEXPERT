@@ -75,7 +75,7 @@
     const rank = (g) => { const i = GROUP_ORDER.indexOf(g); return i < 0 ? GROUP_ORDER.length : i; };
     const checks = [...tr.checks]
       .sort((a, b) => rank(a.group) - rank(b.group))
-      .map((c) => ({ id: c.id, label: c.title, status: STATUS[c.status] || "unknown", detail: c.detail }));
+      .map((c) => ({ id: c.id, label: (L.lang === "en" && c.titleEn) || c.title, status: STATUS[c.status] || "unknown", detail: c.detail }));
     // Olumlu sinyaller mevcut kart tasarımıyla yeşil kart olarak eklenir
     (tr.positiveSignals || []).filter(Boolean).forEach((s, i) =>
       checks.push({ id: "positive_" + i, label: T("Olumlu sinyal", "Positive signal"), status: "ok", detail: s }));

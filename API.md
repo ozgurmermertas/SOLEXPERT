@@ -21,6 +21,8 @@ if (!res.ok) {
 
 - Süre: 5–25 saniye (site analizi ve AI özeti dahil). Arayüzde yükleniyor durumu şart.
 - Hızlı mod (AI'sız): body'e `withAi: false` ekle → 2–5 saniye.
+- Dil: body'e `lang: "en"` eklenirse AI özeti İngilizce yazılır (varsayılan `"tr"`). Kontrol metinleri şimdilik Türkçe;
+  her kontrolde İngilizce başlık için `titleEn` alanı var.
 - Tarayıcıdan test: `http://localhost:3000/api/analyze?address=TOKEN_ADRESI`
 
 ### Hata kodları

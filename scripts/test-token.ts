@@ -1,6 +1,7 @@
 // Sunucu açmadan terminalden test:
 //   npm run test:token -- <TOKEN_ADRESI>          (AI dahil)
 //   npm run test:token -- <TOKEN_ADRESI> --no-ai  (sadece zincir kontrolleri)
+//   npm run test:token -- <TOKEN_ADRESI> --en     (AI özeti İngilizce)
 import { readFileSync, existsSync } from "node:fs";
 
 // .env.local'i elle yükle (Next.js dışında çalıştığımız için).
@@ -20,7 +21,10 @@ async function main() {
   // config, env yüklendikten SONRA okunmalı: dinamik import.
   const { analyzeToken } = await import("../lib/analyze");
   const started = Date.now();
-  const r = await analyzeToken(address, { withAi: !process.argv.includes("--no-ai") });
+  const r = await analyzeToken(address, {
+    withAi: !process.argv.includes("--no-ai"),
+    lang: process.argv.includes("--en") ? "en" : "tr",
+  });
 
   const icon = { gecti: "🟢", dikkat: "🟡", tehlikeli: "🔴", bilinmiyor: "⚪" } as const;
   console.log(`\n${r.token.name ?? "?"} (${r.token.symbol ?? "?"})  —  Risk: ${r.score}/100 [${r.level}]\n`);
