@@ -57,6 +57,7 @@ export interface BundleFacts {
 export interface MarketFacts {
   priceUsd: number | null;
   liquidityUsd: number;      // tüm Solana havuzlarının toplamı
+  marketCapUsd: number | null; // ana havuzun marketCap (yoksa fdv) değeri
   pairCreatedAt: string | null;
   mainDexId: string | null;
   mainPairAddress: string | null; // en derin havuzun adresi (fiyat geçmişi için)

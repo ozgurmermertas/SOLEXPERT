@@ -38,6 +38,7 @@ export const mockRiskyReport: TokenReport = {
   ],
   topHolders: null,
   priceHistory: null,
+  liquidityToMcapPct: 3.2,
   websiteNotes: [
     { text: "Sitedeki iddialar zincirle çelişiyor.", textEn: "Claims on the site contradict on-chain data.", level: "warn" },
     { text: "Site likiditenin kilitli olduğunu söylüyor ama zincirde kilit yok.", textEn: "The site says liquidity is locked, but there is no lock on-chain.", level: "warn" },

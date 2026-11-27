@@ -59,7 +59,10 @@ if (!res.ok) {
 - `topHolders`: ilk 20 hesap tek tek (`{ kind: "wallet" | "pool", rank, pct }`), dağılım grafiği için. Alınamazsa `null`.
 - `priceHistory`: en derin havuzun son 7 günü, 4 saatlik kapanış fiyatları (`{ t, priceUsd }`, eskiden yeniye),
   fiyat grafiği için. Kaynak GeckoTerminal; puanı etkilemez. Alınamazsa ya da 2'den az nokta varsa `null`.
-  (Likidite geçmişi için kaynak yok: arayüz likidite grafiğini çizmez.)
+- `liquidityToMcapPct`: toplam likidite ÷ piyasa değeri × 100 (piyasa değeri: DexScreener ana havuzunun
+  `marketCap`'i, yoksa `fdv`). Örn. `4.2` = havuzdaki para coinin toplam değerinin %4,2'si. Sadece gösterge,
+  puanı etkilemez. Havuz ya da piyasa değeri yoksa `null`. Arayüz bunu likidite grafiği yerine gösterir
+  (likidite geçmişi için ücretsiz kaynak yok): %5 altı tehlikeli, %5–10 uyarı, üstü iyi.
 - `websiteNotes`: "Web sitesinde bulunanlar" paneli. Site incelenmediyse (site yok / AI kapalı) boş dizi.
   ```json
   [{ "text": "Şüpheli bir vaat bulunmadı.", "textEn": "No suspicious promises found.", "level": "ok" }]

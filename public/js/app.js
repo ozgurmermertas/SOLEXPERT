@@ -133,7 +133,7 @@
 
   // ---------- Grafikler (Rojin'in Peak Chart kartları) — sadece gerçek veriyle ----------
   // Fiyat: priceHistory (GeckoTerminal, son 7 gün) · Dağılım: topHolders (RPC, ilk 20 hesap).
-  // Likidite geçmişi için gerçek bir kaynak yok: o grafik çizilmez (sahte veri gösterilmez).
+  // Likidite geçmişi için gerçek bir kaynak yok: yerine "Likidite / Piyasa değeri" göstergesi çizilir.
   const pctFmt = (v, d) => v.toLocaleString(L.lang === "en" ? "en-US" : "tr-TR", { minimumFractionDigits: d, maximumFractionDigits: d });
   const signed = (up) => (L.lang === "en" ? { prefix: up ? "+" : "−", suffix: "%" } : { prefix: up ? "+%" : "−%", suffix: "" });
   const pctAffix = () => (L.lang === "en" ? { prefix: "", suffix: "%" } : { prefix: "%", suffix: "" });
@@ -164,6 +164,39 @@
     };
   }
 
+  // Türkçe sayı + iyelik eki: %4,2'si, %10'u, %3'ü, %40'ı … (sayının okunuşundaki son kelimeye göre)
+  function trPossessive(numText) {
+    const ONES = { 1: "i", 2: "si", 3: "ü", 4: "ü", 5: "i", 6: "sı", 7: "si", 8: "i", 9: "u" };
+    const TENS = { 1: "u", 2: "si", 3: "u", 4: "ı", 5: "si", 6: "ı", 7: "i", 8: "i", 9: "ı" };
+    const digits = numText.replace(/[^\d,]/g, "");
+    const [int, dec] = digits.split(",");
+    const last = dec && /[1-9]/.test(dec) ? dec.replace(/0+$/, "") : int;
+    const d = last[last.length - 1];
+    if (d !== "0") return ONES[d];
+    const zeros = last.length - last.replace(/0+$/, "").length;
+    if (zeros === 1) return TENS[last[last.length - 2]] || "u"; // 10, 20, … 90
+    return zeros === 2 ? "ü" : "i";                                // yüz → 'ü, bin → 'i
+  }
+
+  // Likidite / piyasa değeri göstergesi (likidite geçmişi için ücretsiz kaynak yok; bu grafik onun yerine).
+  // Tek bir değer olduğu için çizgi yatay: sahte bir geçmiş çizilmez. Puanlamayı etkilemez.
+  function liquidityRatioChart(pct) {
+    if (typeof pct !== "number" || !Number.isFinite(pct)) return null;
+    const v = Math.round(pct * 10) / 10;
+    const a = pctAffix();
+    const shown = pctFmt(v, v % 1 ? 1 : 0);
+    return {
+      id: "liquidity", tone: v < 5 ? "danger" : v < 10 ? "warn" : "ok",
+      title: T("Likidite / Piyasa değeri", "Liquidity / Market cap"),
+      caption: T(`Havuzdaki para, coinin toplam değerinin %${shown}'${trPossessive(shown)}`,
+        `The money in the pool is ${shown}% of the coin's total value`),
+      status: T("Canlı", "Live"), badge: T("Oran", "Ratio"),
+      value: v, decimals: 1, ...a, trend: "none",
+      data: [v, v], labels: [T("Şimdi", "Now"), T("Şimdi", "Now")],
+      hover: { ...a, decimals: 1 },
+    };
+  }
+
   function holdersChart(rows, card) {
     if (!Array.isArray(rows) || rows.length < 2) return null;
     const top10 = rows.slice(0, 10).reduce((s, r) => s + r.pct, 0);
@@ -185,7 +218,7 @@
     const cards = toCards(tr.checks);
     const holdersCard = cards.find((c) => c.id === "top_holders");
     return {
-      charts: [priceChart(tr.priceHistory), holdersChart(tr.topHolders, holdersCard)].filter(Boolean),
+      charts: [priceChart(tr.priceHistory), holdersChart(tr.topHolders, holdersCard), liquidityRatioChart(tr.liquidityToMcapPct)].filter(Boolean),
       address: (tr.token && tr.token.address) || address,
       riskScore: score,
       // level yoksa CLAUDE.md aralıkları: 0–30 düşük, 31–60 dikkat, 61–100 yüksek

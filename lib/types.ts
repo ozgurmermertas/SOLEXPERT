@@ -82,6 +82,7 @@ export interface TokenReport {
   holderDistribution: HolderDistribution | null; // ilk 10'un özet dağılımı; alınamazsa null
   topHolders: HolderRow[] | null;   // ilk 20 hesap tek tek (dağılım grafiği); alınamazsa null
   priceHistory: PricePoint[] | null; // son 7 gün, 4 saatlik (fiyat grafiği; GeckoTerminal); yoksa null
+  liquidityToMcapPct: number | null; // toplam likidite / piyasa değeri × 100 (gösterge, puanı etkilemez); yoksa null
   websiteNotes: WebsiteNote[]; // "Web sitesinde bulunanlar" paneli; site incelenmediyse boş
   summary: string | null;    // LLM'in yazdığı özet, istenen dilde (lib/ai/report.ts)
   attestationTx: string | null; // Devnet memo işlem imzası

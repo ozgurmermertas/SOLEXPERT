@@ -11,6 +11,8 @@ interface Pair {
   baseToken: { address: string };
   priceUsd?: string;
   liquidity?: { usd?: number };
+  marketCap?: number;
+  fdv?: number;
   pairCreatedAt?: number;
   info?: {
     websites?: { url: string }[];
@@ -36,6 +38,8 @@ export async function getMarketFacts(address: string): Promise<MarketFacts | nul
   return {
     priceUsd: main.priceUsd ? Number(main.priceUsd) : null,
     liquidityUsd: pairs.reduce((s, p) => s + (p.liquidity?.usd ?? 0), 0),
+    // Ana havuzun piyasa değeri; yoksa tam seyreltilmiş değer (FDV). Sadece gösterge, puanı etkilemez.
+    marketCapUsd: positive(main.marketCap) ?? positive(main.fdv) ?? null,
     pairCreatedAt: Number.isFinite(firstCreated) ? new Date(firstCreated).toISOString() : null,
     mainDexId: main.dexId,
     mainPairAddress: main.pairAddress ?? null,
@@ -44,3 +48,6 @@ export async function getMarketFacts(address: string): Promise<MarketFacts | nul
     telegram: social("telegram"),
   };
 }
+
+const positive = (n: number | undefined): number | undefined =>
+  typeof n === "number" && Number.isFinite(n) && n > 0 ? n : undefined;
