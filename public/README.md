@@ -16,13 +16,15 @@ npx serve .        # ya da: python3 -m http.server
 | `js/mascot.js` | Ekspi baykuşu: kaydırınca yay hareketiyle takip eder, bölüme göre konuşur, tıklayınca sesli okur |
 | `js/voice.js` | Ses: `audioUrl` → `/api/tts` (ElevenLabs) → tarayıcı sesi (yedek) |
 | `js/coins.js` | Arka planda dönen coinler (canvas) |
+| `js/i18n.js` | Türkçe / İngilizce metinler ve dil düğmesi |
+| `js/facts.js` | Ekspi'nin anlattığı istatistikler (TR + EN) |
 | `mocks/*.json` | Backend gelene kadar kullanılan örnek raporlar |
 | `assets/logos/` | Sponsor logoları buraya: `solana.svg`, `elevenlabs.svg`, `vercel.svg` |
 
 ## Backend ile birleştirme (yarın)
 1. `js/config.js` içinde `USE_MOCK: false` yap.
 2. Backend şu iki endpoint'i sağlamalı:
-   - `POST /api/analyze` · body `{ "address": "..." }` → rapor JSON'u
+   - `POST /api/analyze` · body `{ "address": "...", "lang": "tr" | "en" }` → rapor JSON'u (metinler `lang` dilinde yazılmalı)
    - `POST /api/tts` · body `{ "text": "..." }` → `audio/mpeg` (ElevenLabs). İsteğe bağlı: rapor zaten `audioUrl` döndürüyorsa gerekmez.
 3. Backend Next.js ise bu klasörün içeriğini `public/` altına koyun; aynı origin olduğu için CORS gerekmez.
 
@@ -45,25 +47,12 @@ npx serve .        # ya da: python3 -m http.server
 ## Logolar
 Resmi logoları sponsorların marka kitlerinden indirin (hackathon sponsor sayfası genelde verir). Dosya yoksa site otomatik olarak ismi gradyanla yazar.
 
-## Ekspi'nin sesi: ElevenLabs (`/api/tts`) — backend için hazır route
-Tarayıcı sesi sadece yedek. Asıl ses için Next.js'e şu dosyayı ekleyin: `app/api/tts/route.ts`
-```ts
-export async function POST(req: Request) {
-  const { text } = await req.json();
-  const voiceId = process.env.ELEVENLABS_VOICE_ID!; // ElevenLabs Voice Library'den seçtiğiniz sesin ID'si
-  const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-    method: "POST",
-    headers: { "xi-api-key": process.env.ELEVENLABS_API_KEY!, "Content-Type": "application/json", Accept: "audio/mpeg" },
-    body: JSON.stringify({
-      text,
-      model_id: "eleven_multilingual_v2",          // Türkçe destekli
-      voice_settings: { stability: 0.4, similarity_boost: 0.8, style: 0.5 },
-    }),
-  });
-  if (!r.ok) return new Response(await r.text(), { status: r.status });
-  return new Response(r.body, { headers: { "Content-Type": "audio/mpeg" } });
-}
-```
-- `.env.local` içine `ELEVENLABS_API_KEY` ve `ELEVENLABS_VOICE_ID` koyun. **Anahtar asla frontend'e girmesin.**
-- Baykuşa uygun ses: Voice Library'de "playful / cartoon / young" diye filtreleyip birkaçını Türkçe metinle deneyin.
-- Sonra `js/config.js` → `USE_MOCK: false`. Site otomatik olarak ElevenLabs sesine geçer, gaga da gerçek sese göre oynar.
+## Ekspi'nin sesi: ElevenLabs
+Zip'teki `solexpert-api/` klasöründe iki hazır route var:
+- `tts/route.ts` → `app/api/tts/route.ts` (metni ElevenLabs sesiyle mp3'e çevirir)
+- `voices/route.ts` → `app/api/voices/route.ts` (hesaptaki sesleri baykuşun paneline listeler)
+
+`.env.local` içine `ELEVENLABS_API_KEY=...` koyun (repoya girmez). `npm run dev` ile açınca baykuşa tıklayıp paneldeki ses listesinden seçin, "Sesi dene" ile dinleyin.
+Analiz mock'ta olsa bile ses ElevenLabs'tan gelir. Route yoksa site kendiliğinden tarayıcı sesine düşer.
+
+Not: ElevenLabs varsayılan sesleri (Elli, Bella, Domi, Antoni, Rachel) 31 Aralık 2026'da kaldırılıyor. Sonrası için Voice Library'den ses ekleyin; `/api/voices` onları otomatik listeler.

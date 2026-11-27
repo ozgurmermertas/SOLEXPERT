@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SolExpert — Kripto için ekspertiz raporu</title>
   <meta name="description" content="Solana token adresini yapıştır, SolExpert yapay zekâ ajanı güvenilir mi dolandırıcılık mı söylesin." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -16,12 +19,18 @@
     <a href="#top" class="brand">
       <span class="brand-mark">≡</span> SOLEXPERT
     </a>
+    <div class="nav-right">
+    <div class="lang-switch" role="group" aria-label="Dil / Language">
+      <button type="button" data-lang="tr" aria-pressed="true">TR</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    </div>
     <nav class="nav-pill">
-      <a href="#nasil">Nasıl Çalışır</a>
-      <a href="#neden">Neden Önemli</a>
-      <a href="#partners">Partnerler</a>
-      <a href="#top" class="btn btn-sm">Token Tara</a>
+      <a href="#nasil" data-i18n="nav.how">Nasıl Çalışır</a>
+      <a href="#neden" data-i18n="nav.why">Neden Önemli</a>
+      <a href="#partners" data-i18n="nav.tech">Teknolojiler</a>
+      <a href="#top" class="btn btn-sm" data-i18n="nav.scan">Token Tara</a>
     </nav>
+    </div>
   </header>
 
   <main>
@@ -34,32 +43,32 @@
       </div>
 
       <h1 class="hero-title">
-        <span class="row"><span>TOKENIN</span><span>İÇİN</span></span>
-        <span class="row"><span>EKSPERTİZ</span></span>
-        <span class="row"><span>RAPORU</span><span class="accent">_</span></span>
+        <span class="row" data-i18n="hero.l1">TOKENIN İÇİN</span>
+        <span class="row" data-i18n="hero.l2">EKSPERTİZ</span>
+        <span class="row" data-i18n="hero.l3">RAPORU</span>
       </h1>
 
-      <p class="hero-sub">Adresi yapıştır. Usta zincire, cüzdanlara ve web sitesine baksın;<br />sana sade Türkçe ile söylesin: temiz mi, uzak mı duracaksın?</p>
+      <p class="hero-sub" data-i18n="hero.sub">Token adresini yapıştırın. SolExpert zincir üstü verileri, cüzdan dağılımını ve projenin web sitesini inceler; sonucu sade bir Türkçe raporla sunar.</p>
 
       <form id="scan-form" class="scan-box" autocomplete="off">
-        <input id="address" type="text" placeholder="Solana token adresini yapıştır…" spellcheck="false" />
-        <button type="submit" class="btn">Tara →</button>
+        <input id="address" type="text" placeholder="Solana token adresini yapıştır…" data-i18n-ph="hero.ph" spellcheck="false" />
+        <button type="submit" class="btn" data-i18n="hero.btn">Tara →</button>
       </form>
       <div class="chips">
-        <span class="chips-label">Dene:</span>
-        <button class="chip" data-demo="risky">Örnek riskli token</button>
-        <button class="chip" data-demo="safe">Örnek temiz token</button>
+        <span class="chips-label" data-i18n="chips.label">Dene:</span>
+        <button class="chip" data-demo="risky" data-i18n="chips.risky">Örnek riskli token</button>
+        <button class="chip" data-demo="safe" data-i18n="chips.safe">Örnek temiz token</button>
       </div>
     </section>
 
     <!-- ANALİZ + RAPOR -->
     <section class="analysis hidden" id="analysis">
       <div class="steps" id="steps">
-        <div class="step" data-step="chain"><i></i><span>Zincir okunuyor</span><em>Solana</em></div>
-        <div class="step" data-step="mint"><i></i><span>Para basma ve dondurma yetkisi kontrol ediliyor</span><em>Solana</em></div>
-        <div class="step" data-step="holders"><i></i><span>Cüzdan dağılımı inceleniyor</span><em>Solana</em></div>
-        <div class="step" data-step="site"><i></i><span>Web sitesi okunuyor</span><em>Firecrawl</em></div>
-        <div class="step" data-step="ai"><i></i><span>Rapor yazılıyor</span><em>AI</em></div>
+        <div class="step" data-step="chain"><i></i><span data-i18n="step.chain">Zincir okunuyor</span><em>Solana</em></div>
+        <div class="step" data-step="mint"><i></i><span data-i18n="step.mint">Para basma ve dondurma yetkisi kontrol ediliyor</span><em>Solana</em></div>
+        <div class="step" data-step="holders"><i></i><span data-i18n="step.holders">Cüzdan dağılımı inceleniyor</span><em>Solana</em></div>
+        <div class="step" data-step="site"><i></i><span data-i18n="step.site">Web sitesi okunuyor</span><em>Firecrawl</em></div>
+        <div class="step" data-step="ai"><i></i><span data-i18n="step.ai">Rapor yazılıyor</span><em>AI</em></div>
       </div>
 
       <div class="report hidden" id="report">
@@ -75,8 +84,8 @@
             <div class="verdict" id="verdict">—</div>
             <p class="summary" id="summary"></p>
             <div class="report-actions">
-              <button class="btn" id="listen">🔊 Raporu dinle</button>
-              <button class="btn btn-ghost" id="share">Linki kopyala</button>
+              <button class="btn" id="listen" data-i18n="rep.listen">🔊 Raporu dinle</button>
+              <button class="btn btn-ghost" id="share" data-i18n="rep.share">Linki kopyala</button>
             </div>
           </div>
         </div>
@@ -85,69 +94,69 @@
 
         <div class="report-grid">
           <div class="panel">
-            <h3>Para kimin elinde?</h3>
+            <h3 data-i18n="rep.holders">Para kimin elinde?</h3>
             <div class="holder-bars" id="holders"></div>
           </div>
           <div class="panel">
-            <h3>Web sitesinde bulunanlar</h3>
+            <h3 data-i18n="rep.flags">Web sitesinde bulunanlar</h3>
             <ul class="flags" id="flags"></ul>
           </div>
         </div>
-        <p class="disclaimer">SolExpert yatırım tavsiyesi vermez. Rapor, zincir üstü veriye ve sitenin içeriğine dayalı otomatik bir risk değerlendirmesidir.</p>
+        <p class="disclaimer" data-i18n="rep.disc">SolExpert yatırım tavsiyesi vermez. Rapor, zincir üstü veriye ve sitenin içeriğine dayalı otomatik bir risk değerlendirmesidir.</p>
       </div>
     </section>
 
     <!-- NASIL ÇALIŞIR -->
     <section class="section" id="nasil">
       <div class="section-head">
-        <span class="kicker">// nasıl çalışır</span>
-        <h2>İkinci el araba alırken ekspertize götürürsün.<br />Token alırken de götür.</h2>
+        <span class="kicker" data-i18n="how.kicker">Nasıl çalışır</span>
+        <h2 class="slogan">BETTER CALL <span>SOLEXPERT</span></h2>
       </div>
       <div class="cards">
-        <article class="card"><div class="card-ico">⛓</div><h3>Zinciri okur</h3><p>Yaratıcı istediği an yeni para basabiliyor mu? Satışını dondurabiliyor mu? Solana üzerinden tek sorguda.</p></article>
-        <article class="card"><div class="card-ico">◔</div><h3>Cüzdanları sayar</h3><p>Arzın çoğu birkaç kişinin elinde mi? En büyük holder'ların payını hesaplar.</p></article>
-        <article class="card"><div class="card-ico">⌕</div><h3>Siteyi inceler</h3><p>"Garanti 100x" gibi vaatleri, kopya içerikleri yakalar. Firecrawl ile.</p></article>
-        <article class="card"><div class="card-ico">♪</div><h3>Sesli anlatır</h3><p>Raporu sade Türkçe yazar ve ElevenLabs ile sana okur.</p></article>
+        <article class="card"><div class="card-ico">⛓</div><h3 data-i18n="c1.h">Zinciri okur</h3><p data-i18n="c1.p">Yaratıcı istediği an yeni para basabiliyor mu? Satışını dondurabiliyor mu? Solana üzerinden tek sorguda.</p></article>
+        <article class="card"><div class="card-ico">◔</div><h3 data-i18n="c2.h">Cüzdanları sayar</h3><p data-i18n="c2.p">Arzın çoğu birkaç kişinin elinde mi? En büyük holder'ların payını hesaplar.</p></article>
+        <article class="card"><div class="card-ico">⌕</div><h3 data-i18n="c3.h">Siteyi inceler</h3><p data-i18n="c3.p">"Garanti 100x" gibi vaatleri, kopya içerikleri yakalar. Firecrawl ile.</p></article>
+        <article class="card"><div class="card-ico">♪</div><h3 data-i18n="c4.h">Sesli anlatır</h3><p data-i18n="c4.p">Raporu sade bir dille yazar ve ElevenLabs ile size okur.</p></article>
       </div>
     </section>
 
     <!-- NEDEN ÖNEMLİ: İSTATİSTİKLER -->
     <section class="section" id="neden">
       <div class="section-head">
-        <span class="kicker">// neden önemli</span>
-        <h2>Sorun küçük değil.</h2>
-        <p class="lead">2025'in ilk yarısında Solana'da çıkan her 4 tokenın 3'ü rug pull adayı olarak işaretlendi.</p>
+        <span class="kicker" data-i18n="why.kicker">Neden önemli</span>
+        <h2 data-i18n="why.h">Sorun küçük değil.</h2>
+        <p class="lead" data-i18n="why.lead">2025'in ilk yarısında Solana'da çıkan her 4 tokenın 3'ü rug pull adayı olarak işaretlendi.</p>
       </div>
       <div class="stats">
         <div class="stat">
           <div class="stat-num" data-count="76469" data-format="int">0</div>
-          <div class="stat-label">rug pull adayı token</div>
-          <div class="stat-note">100.063 yeni tokendan · Ocak–Haziran 2025 · aday, kesinleşmiş bulgu değil</div>
+          <div class="stat-label" data-i18n="s1.l">rug pull adayı token</div>
+          <div class="stat-note" data-i18n="s1.n">100.063 yeni tokendan · Ocak–Haziran 2025 · aday, kesinleşmiş bulgu değil</div>
         </div>
         <div class="stat">
           <div class="stat-num" data-count="151" data-prefix="$" data-suffix="M+">0</div>
-          <div class="stat-label">doğrudan kayıp (en az)</div>
-          <div class="stat-note">7.322 kârlı adresin çektiği; gerçekleşmemiş düşüşler hariç</div>
+          <div class="stat-label" data-i18n="s2.l">doğrudan kayıp (en az)</div>
+          <div class="stat-note" data-i18n="s2.n">7.322 kârlı adresin çektiği; gerçekleşmemiş düşüşler hariç</div>
         </div>
         <div class="stat">
           <div class="stat-num" data-count="461">0</div>
-          <div class="stat-label">freeze tuzağı</div>
-          <div class="stat-note">Alıcının satışını donduran tokenlar. SolExpert bunu tek sorguda yakalar.</div>
+          <div class="stat-label" data-i18n="s3.l">freeze tuzağı</div>
+          <div class="stat-note" data-i18n="s3.n">Alıcının satışını donduran tokenlar. SolExpert bunu tek sorguda yakalar.</div>
         </div>
         <div class="stat">
-          <div class="stat-num" data-count="98.6" data-prefix="%" data-format="dec">0</div>
-          <div class="stat-label">likidite çöküşü</div>
-          <div class="stat-note">Pump.fun'daki 7M+ tokenın 1.000 $ likiditenin altına düşenleri</div>
+          <div class="stat-num" data-count="98.6" data-prefix-tr="%" data-suffix-en="%" data-format="dec">0</div>
+          <div class="stat-label" data-i18n="s4.l">likidite çöküşü</div>
+          <div class="stat-note" data-i18n="s4.n">Pump.fun'daki 7M+ tokenın 1.000 $ likiditenin altına düşenleri</div>
         </div>
       </div>
-      <p class="sources">Kaynak: Chen vd., <a href="https://arxiv.org/abs/2603.24625" target="_blank" rel="noopener">SolRugDetector</a>, arXiv:2603.24625 (2026) · Solidus Labs (2025) · <a href="https://deepstrike.io/blog/rug-pull-statistics" target="_blank" rel="noopener">DeepStrike, Rug Pull Statistics 2026</a></p>
+      <p class="sources"><span data-i18n="src.label">Kaynak:</span> Chen et al., <a href="https://arxiv.org/abs/2603.24625" target="_blank" rel="noopener">SolRugDetector</a>, arXiv:2603.24625 (2026) · Solidus Labs (2025) · <a href="https://deepstrike.io/blog/rug-pull-statistics" target="_blank" rel="noopener">DeepStrike, Rug Pull Statistics 2026</a></p>
     </section>
 
     <!-- PARTNERS -->
     <section class="section" id="partners">
       <div class="section-head center">
-        <span class="kicker">// partnerler</span>
-        <h2>Sponsorlarımız</h2>
+        <span class="kicker" data-i18n="tech.kicker">Altyapı</span>
+        <h2 data-i18n="tech.h">Kullanılan teknolojiler</h2>
       </div>
       <!-- Logoları assets/logos/ altına koyun; yoksa isim yazılır -->
       <div class="partners" id="partner-list"></div>
@@ -155,103 +164,153 @@
   </main>
 
   <footer class="footer">
-    <div>
+    <div class="foot-brand">
       <a href="#top" class="brand"><span class="brand-mark">≡</span> SOLEXPERT</a>
-      <p>Dev3pack Hackathon projesi.</p>
+      <p data-i18n="foot.tag">Solana tokenları için yapay zekâ destekli risk analizi.</p>
     </div>
-    <p class="foot-note">SolExpert yatırım tavsiyesi değildir. © 2026 SolExpert</p>
+    <nav class="foot-links" aria-label="Alt menü">
+      <a href="#nasil" data-i18n="foot.how">Nasıl çalışır</a>
+      <a href="#neden" data-i18n="foot.why">Neden önemli</a>
+      <a href="#partners" data-i18n="foot.tech">Teknolojiler</a>
+      <a href="#top" data-i18n="foot.scan">Token tara</a>
+    </nav>
+    <p class="foot-note" data-i18n="foot.note">SolExpert yatırım tavsiyesi vermez. Raporlar otomatik risk değerlendirmesidir.<br />© 2026 SolExpert. Tüm hakları saklıdır.</p>
   </footer>
 
   <!-- Maskot: Ekspi, ekspertiz baykuşu -->
   <div class="mascot" id="mascot">
-    <div class="bubble" id="bubble">Selam! Ben Ekspi. Bana tıkla, adresi yapıştır, ekspertizini yapayım.</div>
+    <div class="bubble" id="bubble" role="status" aria-live="polite">
+      <div class="bubble-head" id="bubble-head"><span class="bubble-dot"></span>Ekspi<span class="bubble-tag" data-i18n="bubble.fact">· Biliyor muydunuz?</span></div>
+      <p class="bubble-text" id="bubble-text"></p>
+      <div class="bubble-src" id="bubble-src"></div>
+    </div>
 
     <!-- Tıklayınca açılan panel -->
-    <div class="owl-panel hidden" id="owl-panel" role="dialog" aria-label="Ekspi paneli">
-      <button class="owl-close" id="owl-close" aria-label="Kapat">×</button>
-      <label for="owl-address">Token adresini yapıştır</label>
+    <div class="owl-panel hidden" id="owl-panel" role="dialog" aria-label="Ekspi paneli" data-i18n-aria="panel.aria">
+      <button class="owl-close" id="owl-close" aria-label="Kapat" data-i18n-aria="panel.close">×</button>
+      <label for="owl-address" data-i18n="panel.addr">Token adresini yapıştır</label>
       <div class="owl-row">
-        <input id="owl-address" type="text" placeholder="Adres…" spellcheck="false" autocomplete="off" />
-        <button class="btn btn-sm" id="owl-paste" title="Panodan yapıştır">📋</button>
+        <input id="owl-address" type="text" placeholder="Adres…" data-i18n-ph="panel.ph" spellcheck="false" autocomplete="off" />
+        <button class="btn btn-sm" id="owl-paste" title="Panodan yapıştır" data-i18n-title="panel.paste">📋</button>
       </div>
-      <button class="btn owl-go" id="owl-scan">Tara →</button>
+      <button class="btn owl-go" id="owl-scan" data-i18n="panel.scan">Tara →</button>
 
       <div class="owl-sep"></div>
-      <label for="owl-voice">Ekspi'nin sesi</label>
+      <label for="owl-voice" data-i18n="panel.voice">Ekspi'nin sesi</label>
       <select id="owl-voice"></select>
-      <div class="owl-sliders">
-        <label>Hız <input type="range" id="owl-rate" min="0.7" max="1.3" step="0.05" value="1" /></label>
-        <label>Ton <input type="range" id="owl-pitch" min="0.6" max="1.6" step="0.05" value="1.15" /></label>
+      <div class="owl-sliders" id="owl-sliders">
+        <label><span data-i18n="panel.rate">Hız</span> <input type="range" id="owl-rate" min="0.7" max="1.3" step="0.05" value="1" /></label>
+        <label><span data-i18n="panel.pitch">Ton</span> <input type="range" id="owl-pitch" min="0.6" max="1.6" step="0.05" value="1.15" /></label>
       </div>
-      <button class="btn btn-ghost btn-sm" id="owl-test">🔊 Sesi dene</button>
+      <div class="owl-actions">
+        <button class="btn btn-ghost btn-sm" id="owl-test" data-i18n="panel.test">🔊 Sesi dene</button>
+        <button class="btn btn-ghost btn-sm" id="owl-fact" data-i18n="panel.fact">💡 Bir bilgi ver</button>
+      </div>
       <p class="owl-hint" id="owl-hint"></p>
     </div>
 
-    <svg viewBox="0 0 140 150" class="owl" id="owl" aria-label="Ekspi, baykuş maskot" role="button" tabindex="0">
+    <svg viewBox="0 0 160 172" class="owl" id="owl" aria-label="Ekspi" role="button" tabindex="0">
       <defs>
-        <linearGradient id="owlBody" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#8a5cf0" />
-          <stop offset="1" stop-color="#4b2a9e" />
+        <linearGradient id="oHead" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#f5ab62" />
+          <stop offset="1" stop-color="#d8742e" />
         </linearGradient>
-        <linearGradient id="owlWing" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#6c40d8" />
-          <stop offset="1" stop-color="#14b88a" />
+        <linearGradient id="oBody" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#a65d2c" />
+          <stop offset="1" stop-color="#6b3314" />
         </linearGradient>
-        <radialGradient id="owlIris" cx=".5" cy=".5" r=".5">
-          <stop offset=".55" stop-color="#ffcf4a" />
-          <stop offset="1" stop-color="#ff9a1f" />
+        <linearGradient id="oBelly" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#d79a5e" />
+          <stop offset="1" stop-color="#b8743c" />
+        </linearGradient>
+        <linearGradient id="oWing" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#7a3c18" />
+          <stop offset="1" stop-color="#4f240c" />
+        </linearGradient>
+        <radialGradient id="oIris" cx=".5" cy=".5" r=".5">
+          <stop offset=".62" stop-color="#3a1a0a" />
+          <stop offset=".78" stop-color="#8a4316" />
+          <stop offset="1" stop-color="#e8903f" />
+        </radialGradient>
+        <radialGradient id="oLens" cx=".35" cy=".3" r=".8">
+          <stop offset="0" stop-color="#fff" stop-opacity=".22" />
+          <stop offset=".6" stop-color="#fff" stop-opacity=".04" />
+          <stop offset="1" stop-color="#fff" stop-opacity="0" />
         </radialGradient>
       </defs>
-      <!-- gölge -->
-      <ellipse cx="70" cy="144" rx="34" ry="5" fill="#000" opacity=".35" />
-      <!-- kulak tüyleri -->
-      <path d="M34 34 Q30 14 18 6 Q40 12 50 28 Z" fill="#5a33c0" />
-      <path d="M106 34 Q110 14 122 6 Q100 12 90 28 Z" fill="#5a33c0" />
-      <!-- kanatlar -->
-      <g class="wing wing-l"><path d="M28 62 Q6 88 18 124 Q30 112 38 96 Z" fill="url(#owlWing)" /></g>
-      <g class="wing wing-r"><path d="M112 62 Q134 88 122 124 Q110 112 102 96 Z" fill="url(#owlWing)" /></g>
-      <!-- gövde -->
-      <path d="M70 18 C108 18 116 52 114 82 C112 118 94 138 70 138 C46 138 28 118 26 82 C24 52 32 18 70 18 Z" fill="url(#owlBody)" />
-      <!-- karın -->
-      <ellipse cx="70" cy="104" rx="28" ry="30" fill="#efe6d4" />
-      <g fill="none" stroke="#b9a988" stroke-width="2" stroke-linecap="round">
-        <path d="M56 96 q4 4 8 0 M68 96 q4 4 8 0 M80 96 q-2 4 -4 4" />
-        <path d="M52 108 q4 4 8 0 M64 108 q4 4 8 0 M76 108 q4 4 8 0" />
-        <path d="M58 120 q4 4 8 0 M70 120 q4 4 8 0" />
+
+      <ellipse cx="80" cy="166" rx="40" ry="4.5" fill="#000" opacity=".35" />
+
+      <!-- kanatlar (tüy uçlu) -->
+      <g class="wing wing-l">
+        <path d="M40 92 C22 104 16 128 24 150 C28 146 31 147 33 151 C35 146 39 146 41 150 C44 140 48 124 50 108 Z" fill="url(#oWing)" />
+        <path d="M40 98 C30 110 27 126 30 140" stroke="#a86534" stroke-width="1.6" fill="none" opacity=".55" stroke-linecap="round" />
       </g>
+      <g class="wing wing-r">
+        <path d="M120 92 C138 104 144 128 136 150 C132 146 129 147 127 151 C125 146 121 146 119 150 C116 140 112 124 110 108 Z" fill="url(#oWing)" />
+        <path d="M120 98 C130 110 133 126 130 140" stroke="#a86534" stroke-width="1.6" fill="none" opacity=".55" stroke-linecap="round" />
+      </g>
+
+      <!-- gövde -->
+      <path d="M80 84 C110 84 122 106 120 130 C118 152 102 162 80 162 C58 162 42 152 40 130 C38 106 50 84 80 84 Z" fill="url(#oBody)" />
+      <path d="M80 100 C98 100 106 116 105 132 C104 148 94 156 80 156 C66 156 56 148 55 132 C54 116 62 100 80 100 Z" fill="url(#oBelly)" />
+      <g fill="none" stroke="#8a4a1e" stroke-width="1.6" stroke-linecap="round" opacity=".5">
+        <path d="M68 118 l4 3 4-3 M80 118 l4 3 4-3" />
+        <path d="M62 130 l4 3 4-3 M74 130 l4 3 4-3 M86 130 l4 3 4-3" />
+        <path d="M68 142 l4 3 4-3 M80 142 l4 3 4-3" />
+      </g>
+
+      <!-- kafa + kulak tüyleri -->
+      <path d="M40 40 Q30 24 34 10 Q44 24 58 30 Z" fill="#c9652a" />
+      <path d="M120 40 Q130 24 126 10 Q116 24 102 30 Z" fill="#c9652a" />
+      <path d="M80 22 C116 22 134 42 134 66 C134 92 112 106 80 106 C48 106 26 92 26 66 C26 42 44 22 80 22 Z" fill="url(#oHead)" />
+      <path d="M72 24 Q80 14 88 24 Q84 22 80 26 Q76 22 72 24 Z" fill="#e48a40" />
+      <path d="M36 52 C40 34 60 26 80 26" stroke="#fff" stroke-opacity=".18" stroke-width="3" fill="none" stroke-linecap="round" />
+
       <!-- yüz diski -->
-      <path d="M70 40 C58 30 32 32 32 56 C32 76 52 82 70 74 C88 82 108 76 108 56 C108 32 82 30 70 40 Z" fill="#cdb8ff" />
-      <!-- gözler -->
+      <path d="M80 50 C70 36 36 36 36 64 C36 88 62 96 80 86 C98 96 124 88 124 64 C124 36 90 36 80 50 Z" fill="#f8eedb" />
+      <path d="M80 50 C70 36 36 36 36 64 C36 88 62 96 80 86 C98 96 124 88 124 64 C124 36 90 36 80 50 Z" fill="none" stroke="#e7d2ad" stroke-width="2" />
+
+      <!-- gözler (göz kırpma bu grupta) -->
       <g class="eyes">
-        <circle cx="52" cy="56" r="15" fill="#fff" />
-        <circle cx="88" cy="56" r="15" fill="#fff" />
-        <circle cx="52" cy="56" r="10" fill="url(#owlIris)" />
-        <circle cx="88" cy="56" r="10" fill="url(#owlIris)" />
+        <circle cx="59" cy="64" r="15" fill="url(#oIris)" />
+        <circle cx="101" cy="64" r="15" fill="url(#oIris)" />
         <g class="pupils">
-          <circle cx="52" cy="56" r="5.5" fill="#111" />
-          <circle cx="88" cy="56" r="5.5" fill="#111" />
-          <circle cx="54" cy="53" r="2" fill="#fff" />
-          <circle cx="90" cy="53" r="2" fill="#fff" />
+          <circle cx="59" cy="65" r="7.5" fill="#0b0502" />
+          <circle cx="101" cy="65" r="7.5" fill="#0b0502" />
+          <circle cx="63.5" cy="59.5" r="4" fill="#fff" />
+          <circle cx="105.5" cy="59.5" r="4" fill="#fff" />
+          <circle cx="55" cy="70" r="1.6" fill="#fff" opacity=".8" />
+          <circle cx="97" cy="70" r="1.6" fill="#fff" opacity=".8" />
         </g>
       </g>
-      <!-- kaşlar -->
-      <path d="M38 40 Q52 34 62 42" stroke="#3a1f86" stroke-width="3.5" fill="none" stroke-linecap="round" class="brow" />
-      <path d="M102 40 Q88 34 78 42" stroke="#3a1f86" stroke-width="3.5" fill="none" stroke-linecap="round" class="brow" />
-      <!-- gaga (üst + alt; alt parça konuşurken açılır) -->
-      <path d="M63 68 Q70 64 77 68 L70 80 Z" fill="#ffb03a" />
-      <path d="M65 76 Q70 78 75 76 L70 82 Z" fill="#e08a12" id="beak-low" />
-      <!-- büyüteç -->
-      <g class="loupe">
-        <line x1="124" y1="118" x2="136" y2="136" stroke="#ffb03a" stroke-width="5" stroke-linecap="round" />
-        <circle cx="116" cy="106" r="13" fill="rgba(255,255,255,.28)" stroke="#ffb03a" stroke-width="4" />
+
+      <!-- uzman gözlüğü -->
+      <g class="glasses">
+        <circle cx="59" cy="64" r="19" fill="url(#oLens)" stroke="#2a2420" stroke-width="3" />
+        <circle cx="101" cy="64" r="19" fill="url(#oLens)" stroke="#2a2420" stroke-width="3" />
+        <path d="M78 62 Q80 58 82 62" stroke="#2a2420" stroke-width="3" fill="none" stroke-linecap="round" />
+        <path d="M40 60 L33 56 M120 60 L127 56" stroke="#2a2420" stroke-width="3" stroke-linecap="round" />
       </g>
+
+      <!-- gaga -->
+      <path d="M73 79 Q80 74 87 79 L80 93 Z" fill="#f2a32a" />
+      <path d="M75 87 Q80 89 85 87 L80 95 Z" fill="#c77b12" id="beak-low" />
+
       <!-- ayaklar -->
-      <path d="M58 136 l-4 7 M62 137 l0 7 M66 136 l4 7" stroke="#ffb03a" stroke-width="3" stroke-linecap="round" />
-      <path d="M74 136 l-4 7 M78 137 l0 7 M82 136 l4 7" stroke="#ffb03a" stroke-width="3" stroke-linecap="round" />
+      <g fill="#f08c1e">
+        <ellipse cx="62" cy="161" rx="5" ry="4" /><ellipse cx="70" cy="162" rx="5" ry="4" /><ellipse cx="54" cy="160" rx="4.5" ry="3.6" />
+        <ellipse cx="90" cy="162" rx="5" ry="4" /><ellipse cx="98" cy="161" rx="5" ry="4" /><ellipse cx="106" cy="160" rx="4.5" ry="3.6" />
+      </g>
     </svg>
+    <button class="owl-stop hidden" id="owl-stop" type="button" aria-label="Sesi durdur" data-i18n-aria="owl.stop">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor" /></svg>
+    </button>
   </div>
 
   <script src="js/config.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/facts.js"></script>
   <script src="js/coins.js"></script>
   <script src="js/voice.js"></script>
   <script src="js/mascot.js"></script>

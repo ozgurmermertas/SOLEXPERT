@@ -1,0 +1,84 @@
+{
+  "address": "DEMO_RISKLI_TOKEN",
+  "name": "Sample Risky Token",
+  "symbol": "RISK",
+  "riskScore": 82,
+  "verdict": "danger",
+  "verdictLabel": "STAY AWAY",
+  "summary": "This token is risky. Its creator can mint new tokens at any time and can freeze your sale. On top of that, seventy-four percent of the supply sits in just ten wallets, and the website makes guaranteed-return promises.",
+  "checks": [
+    {
+      "id": "mint_authority",
+      "label": "Can new tokens be minted?",
+      "status": "danger",
+      "detail": "Yes. Mint authority is still open; the creator can mint as many tokens as they like.",
+      "raw": "mintAuthority: 7xKq…9fPz"
+    },
+    {
+      "id": "freeze_authority",
+      "label": "Can your sale be frozen?",
+      "status": "danger",
+      "detail": "Yes. Freeze authority is open; if your wallet is frozen you cannot sell.",
+      "raw": "freezeAuthority: 7xKq…9fPz"
+    },
+    {
+      "id": "top_holders",
+      "label": "Who holds the supply?",
+      "status": "danger",
+      "detail": "The top 10 wallets hold 74% of the supply.",
+      "raw": "top10Share: 0.74"
+    },
+    {
+      "id": "liquidity",
+      "label": "Is there enough liquidity?",
+      "status": "warn",
+      "detail": "The pool holds about $18,000 in liquidity and it is not locked.",
+      "raw": "liquidityUsd: 18000, locked: false"
+    },
+    {
+      "id": "website",
+      "label": "Is the website trustworthy?",
+      "status": "warn",
+      "detail": "The site contains unrealistic promises such as 'guaranteed' and '100x'.",
+      "raw": "flags: 3"
+    }
+  ],
+  "holders": [
+    {
+      "label": "Wallet #1",
+      "pct": 41
+    },
+    {
+      "label": "Wallet #2",
+      "pct": 14
+    },
+    {
+      "label": "Wallet #3",
+      "pct": 9
+    },
+    {
+      "label": "Wallets #4–10",
+      "pct": 10
+    },
+    {
+      "label": "Everyone else",
+      "pct": 26
+    }
+  ],
+  "siteFlags": [
+    {
+      "text": "\"Guaranteed 100x returns, don't miss out!\"",
+      "level": "warn"
+    },
+    {
+      "text": "\"24 hours only: 500% bonus for early buyers\"",
+      "level": "warn"
+    },
+    {
+      "text": "The team and roadmap page is almost identical to another project's.",
+      "level": "warn"
+    }
+  ],
+  "audioUrl": null,
+  "createdAt": "2026-11-26T12:00:00Z"
+}

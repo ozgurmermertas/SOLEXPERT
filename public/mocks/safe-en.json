@@ -1,0 +1,76 @@
+{
+  "address": "DEMO_TEMIZ_TOKEN",
+  "name": "Sample Clean Token",
+  "symbol": "TEMIZ",
+  "riskScore": 14,
+  "verdict": "ok",
+  "verdictLabel": "LOOKS CLEAN",
+  "summary": "This token looks clean. Mint and freeze authorities have been revoked, the supply is spread across a wide base of holders, and no suspicious promises were found on the website. Every investment still carries risk.",
+  "checks": [
+    {
+      "id": "mint_authority",
+      "label": "Can new tokens be minted?",
+      "status": "ok",
+      "detail": "No. Mint authority has been permanently revoked.",
+      "raw": "mintAuthority: null"
+    },
+    {
+      "id": "freeze_authority",
+      "label": "Can your sale be frozen?",
+      "status": "ok",
+      "detail": "No. Freeze authority has been revoked.",
+      "raw": "freezeAuthority: null"
+    },
+    {
+      "id": "top_holders",
+      "label": "Who holds the supply?",
+      "status": "ok",
+      "detail": "The top 10 wallets hold 18% of the supply.",
+      "raw": "top10Share: 0.18"
+    },
+    {
+      "id": "liquidity",
+      "label": "Is there enough liquidity?",
+      "status": "ok",
+      "detail": "The pool holds about $2.4 million in liquidity.",
+      "raw": "liquidityUsd: 2400000"
+    },
+    {
+      "id": "website",
+      "label": "Is the website trustworthy?",
+      "status": "ok",
+      "detail": "No suspicious promises found; documentation and team information are available.",
+      "raw": "flags: 0"
+    }
+  ],
+  "holders": [
+    {
+      "label": "Wallet #1",
+      "pct": 4
+    },
+    {
+      "label": "Wallet #2",
+      "pct": 3
+    },
+    {
+      "label": "Wallet #3",
+      "pct": 3
+    },
+    {
+      "label": "Wallets #4–10",
+      "pct": 8
+    },
+    {
+      "label": "Everyone else",
+      "pct": 82
+    }
+  ],
+  "siteFlags": [
+    {
+      "text": "No suspicious promises found.",
+      "level": "ok"
+    }
+  ],
+  "audioUrl": null,
+  "createdAt": "2026-11-26T12:00:00Z"
+}
