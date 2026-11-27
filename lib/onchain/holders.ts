@@ -1,6 +1,8 @@
 // Kontroller: ilk 10 holder payı ve geliştiricinin (oluşturanın) payı.
 import { rpc } from "../http";
 import type { CreatorFacts, HolderFacts } from "../facts";
+import type { HolderRow } from "../types";
+import { isWalletOwner, tokenAccountOwners } from "./owners";
 
 interface LargestAccounts {
   value: { address: string; amount: string }[];
@@ -8,28 +10,43 @@ interface LargestAccounts {
 
 export async function getHolderFacts(address: string, supply: bigint): Promise<HolderFacts> {
   const res = await rpc<LargestAccounts>("getTokenLargestAccounts", [address]);
-  if (supply === 0n) {
-    return { top10Pct: 0, largestPct: 0, distribution: { wallet1: 0, wallet2: 0, wallet3: 0, wallets4to10: 0, others: 0 } };
+  if (supply === 0n) return { top10Pct: 0, largestPct: 0, distribution: [] };
+
+  const top = res.value.slice(0, 10);
+  const amounts = top.map((a) => BigInt(a.amount));
+  const top10 = amounts.reduce((s, a) => s + a, 0n);
+
+  // Hangi hesaplar likidite havuzu / program? (bundle kontrolüyle aynı yöntem)
+  // Okunamazsa hepsi cüzdan sayılır: panel yine dolar, sadece etiket "havuz" olmaz.
+  let isPool = top.map(() => false);
+  try {
+    const owners = await tokenAccountOwners(top.map((a) => a.address));
+    const known = owners.filter((o): o is string => !!o);
+    const flags = await isWalletOwner(known);
+    const wallet = new Map(known.map((o, i) => [o, flags[i]]));
+    isPool = owners.map((o) => !!o && wallet.get(o) === false);
+  } catch (e) {
+    console.warn("[holders] havuz tespiti başarısız:", e instanceof Error ? e.message : e);
   }
 
-  const amounts = res.value.map((a) => BigInt(a.amount));
-  const sum = (from: number, to: number) => amounts.slice(from, to).reduce((s, a) => s + a, 0n);
-  const top10 = sum(0, 10);
-  // Not: listede likidite havuzunun hesabı da olabilir; detay metninde belirtilir.
-  const distribution = {
-    wallet1: pct(amounts[0] ?? 0n, supply),
-    wallet2: pct(amounts[1] ?? 0n, supply),
-    wallet3: pct(amounts[2] ?? 0n, supply),
-    wallets4to10: pct(sum(3, 10), supply),
-    others: 0,
-  };
+  const rows: HolderRow[] = [];
+  amounts.slice(0, 3).forEach((a, i) =>
+    rows.push({ kind: isPool[i] ? "pool" : "wallet", rank: i + 1, pct: pct(a, supply) }));
+  let wallets4to10 = 0n;
+  amounts.slice(3).forEach((a, j) => {
+    const i = j + 3;
+    if (isPool[i]) rows.push({ kind: "pool", rank: i + 1, pct: pct(a, supply) });
+    else wallets4to10 += a;
+  });
+  if (amounts.length > 3) rows.push({ kind: "wallets4to10", rank: null, pct: pct(wallets4to10, supply) });
   // "Diğer herkes" = 100 − ilk 10 (yuvarlama farkı burada toplanır, toplam tam 100 olur)
-  distribution.others = Math.max(0, Math.round((100 - distribution.wallet1 - distribution.wallet2
-    - distribution.wallet3 - distribution.wallets4to10) * 100) / 100);
+  const shown = rows.reduce((s, r) => s + r.pct, 0);
+  rows.push({ kind: "others", rank: null, pct: Math.max(0, Math.round((100 - shown) * 100) / 100) });
+
   return {
     top10Pct: pct(top10, supply),
-    largestPct: distribution.wallet1,
-    distribution,
+    largestPct: pct(amounts[0] ?? 0n, supply),
+    distribution: rows,
   };
 }
 

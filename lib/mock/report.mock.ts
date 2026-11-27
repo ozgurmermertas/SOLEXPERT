@@ -29,7 +29,13 @@ export const mockRiskyReport: TokenReport = {
     { id: "website", group: "proje", title: "Resmi site", status: "tehlikeli", points: 10, detail: "Sitede 'garanti 100x' vaadi var; 'likidite kilitli' iddiası zincirle çelişiyor." },
   ],
   positiveSignals: [],
-  holderDistribution: { wallet1: 41, wallet2: 14, wallet3: 9, wallets4to10: 7, others: 29 },
+  holderDistribution: [
+    { kind: "pool", rank: 1, pct: 41 },
+    { kind: "wallet", rank: 2, pct: 14 },
+    { kind: "wallet", rank: 3, pct: 9 },
+    { kind: "wallets4to10", rank: null, pct: 7 },
+    { kind: "others", rank: null, pct: 29 },
+  ],
   websiteNotes: [
     { text: "Sitedeki iddialar zincirle çelişiyor.", textEn: "Claims on the site contradict on-chain data.", level: "warn" },
     { text: "Site likiditenin kilitli olduğunu söylüyor ama zincirde kilit yok.", textEn: "The site says liquidity is locked, but there is no lock on-chain.", level: "warn" },

@@ -11,11 +11,17 @@ interface GeminiResponse {
 const FALLBACK_MODELS = ["gemini-flash-lite-latest"];
 const RETRYABLE = new Set([429, 500, 503]);
 
+export interface GenerateOptions {
+  json?: boolean;
+  /** 0 = her seferinde aynı/en olası cevap (özet için). Varsayılan 0.2. */
+  temperature?: number;
+}
+
 export function aiEnabled(): boolean {
   return !!config.geminiKey;
 }
 
-export async function generate(prompt: string, opts: { json?: boolean } = {}): Promise<string> {
+export async function generate(prompt: string, opts: GenerateOptions = {}): Promise<string> {
   if (!config.geminiKey) throw new Error("GOOGLE_GENERATIVE_AI_API_KEY eksik.");
 
   // Sıra: ana model → yedek model → ana model (son bir şans). Her deneme en fazla 15 sn.
@@ -48,7 +54,7 @@ function reason(e: unknown): string {
   return e instanceof Error && /timeout|abort/i.test(e.name + e.message) ? "zaman aşımı" : "bağlantı";
 }
 
-async function callModel(model: string, prompt: string, opts: { json?: boolean }): Promise<string> {
+async function callModel(model: string, prompt: string, opts: GenerateOptions): Promise<string> {
   const res = await fetchJson<GeminiResponse>(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
     {
@@ -57,7 +63,7 @@ async function callModel(model: string, prompt: string, opts: { json?: boolean }
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: {
-          temperature: 0.2,
+          temperature: opts.temperature ?? 0.2,
           ...(opts.json ? { responseMimeType: "application/json" } : {}),
         },
       }),

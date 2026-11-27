@@ -89,7 +89,11 @@ export function buildChecks(f: Facts): CheckResult[] {
       tr: `İlk 10 cüzdanın arzdaki payı %${fmt(p)}.`,
       en: `The top 10 wallets hold ${fmtEn(p)}% of the supply.`,
     };
-    const poolNote: Text = { tr: " (Likidite havuzu da bu listede olabilir.)", en: " (The liquidity pool may be in this list.)" };
+    // Havuz/program hesapları artık tespit ediliyor (lib/onchain/owners.ts): not sadece gerçekten varsa yazılır.
+    const poolPct = f.holders.distribution.filter((r) => r.kind === "pool").reduce((s, r) => s + r.pct, 0);
+    const poolNote: Text = poolPct > 0
+      ? { tr: ` (Bunun %${fmt(poolPct)} kadarı likidite havuzu.)`, en: ` (${fmtEn(poolPct)}% of this is a liquidity pool.)` }
+      : { tr: "", en: "" };
     checks.push(
       p > 50 ? result(top10Base, "tehlikeli", 15, { tr: text.tr + poolNote.tr, en: text.en + poolNote.en }, tech)
       : p > 30 ? result(top10Base, "dikkat", 7, { tr: text.tr + poolNote.tr, en: text.en + poolNote.en }, tech)
@@ -235,12 +239,13 @@ export function buildChecks(f: Facts): CheckResult[] {
   } else {
     const flags = siteFlags(f);
     const tech = `flags: ${flags.length}`;
+    // Tehlikeli (10) sadece gerçekçi olmayan vaat ya da zincirle çelişki varsa.
+    // "Şablon içerik" tek başına dikkat (0 puan): birçok meşru projenin sitesi de kısa/jenerik.
+    const serious = f.website.unrealisticPromises || f.website.contradictsChain;
+    const flagText: Text = { tr: cap(flags.map((x) => x.tr).join(", ")) + ".", en: cap(flags.map((x) => x.en).join(", ")) + "." };
     checks.push(
-      flags.length
-        ? result(webBase, "tehlikeli", 10, {
-            tr: cap(flags.map((x) => x.tr).join(", ")) + ".",
-            en: cap(flags.map((x) => x.en).join(", ")) + ".",
-          }, tech)
+      serious ? result(webBase, "tehlikeli", 10, flagText, tech)
+      : flags.length ? result(webBase, "dikkat", 0, flagText, tech)
         : result(webBase, "gecti", 0, {
             tr: "Şüpheli bir vaat bulunmadı; sitede belirgin bir kırmızı bayrak yok.",
             en: "No suspicious promises found; no obvious red flags on the website.",

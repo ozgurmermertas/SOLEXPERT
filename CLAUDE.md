@@ -81,7 +81,7 @@ API.md                      ← Frontend'in backend'i nasıl çağıracağı
 | liquidity | Likidite | < 10.000 $ | 10 |
 | lp_lock | Likidite kilidi | LP kilitli/yakılmış değil | 15 |
 | age | Token yaşı | < 24 saat | 5 |
-| website | Resmi site | Kopya içerik / abartılı vaat / zincirle çelişki | 10 |
+| website | Resmi site | Abartılı vaat veya zincirle çelişki → 10; sadece şablon/jenerik içerik → dikkat, 0 | 10 |
 
 Skor aralıkları: 0–30 düşük (yeşil), 31–60 dikkat (sarı), 61–100 yüksek (kırmızı).
 Özel kurallar:

@@ -46,14 +46,19 @@ export interface TokenInfo {
 
 export type RiskLevel = "dusuk" | "dikkat" | "yuksek";
 
-/** Arzın dağılımı, toplam arzın yüzdesi (0–100). En büyük hesaplar likidite havuzu olabilir. */
-export interface HolderDistribution {
-  wallet1: number;      // en büyük hesap
-  wallet2: number;
-  wallet3: number;
-  wallets4to10: number; // 4.–10. hesapların toplamı
-  others: number;       // geri kalan herkes
+/**
+ * Arzın dağılımında bir satır (toplam arzın yüzdesi, 0–100). Sıra:
+ * 1.–3. hesap tek tek ("wallet" ya da "pool"), 4.–10. arasındaki havuzlar ("pool"),
+ * 4.–10. arasındaki cüzdanların toplamı ("wallets4to10"), geri kalan herkes ("others").
+ * "pool" = likidite havuzu / program hesabı (bundle kontrolüyle aynı yöntem, lib/onchain/owners.ts).
+ */
+export interface HolderRow {
+  kind: "wallet" | "pool" | "wallets4to10" | "others";
+  rank: number | null; // wallet/pool için sıra (1–10), diğerlerinde null
+  pct: number;
 }
+
+export type HolderDistribution = HolderRow[];
 
 /** Resmi site analizinden bir gözlem. */
 export interface WebsiteNote {

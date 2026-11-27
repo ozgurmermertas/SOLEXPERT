@@ -9,13 +9,13 @@
 // Süre dolunca: o ana kadar incelenen cüzdanlarda "tehlikeli" bir grup bulunduysa kısmi sonuç
 // döner (partial: true); bulunmadıysa hata fırlatır → analyze.ts'te null → kontrol "bilinmiyor".
 import { rpc } from "../http";
+import { isWalletOwner, tokenAccountOwners } from "./owners";
 import type { BundleFacts, BundleGroup } from "../facts";
 
 const TOP_N = 12;
 const CONCURRENCY = 3;
 const DEADLINE_MS = 12_000;
 const MAX_SIGNATURES = 1000; // bu kadar (veya fazla) işlemi olan cüzdan atlanır
-const SYSTEM_PROGRAM = "11111111111111111111111111111111";
 const WEAK_WINDOW_SEC = 3600; // çok aktif bir kaynak, ilk işlemleri ≤ 1 saat arayla olan cüzdanları bağlar
 
 /** Skorlamadaki "tehlikeli" eşiği ile aynı (kısmi sonuç sadece bu durumda kullanılır). */
@@ -45,13 +45,6 @@ export class BundleTimeoutError extends Error {}
 
 interface LargestAccounts {
   value: { address: string; amount: string }[];
-}
-
-interface AccountInfo {
-  owner: string;
-  executable: boolean;
-  lamports: number;
-  data: unknown;
 }
 
 interface Signature {
@@ -116,30 +109,18 @@ async function run(mint: string, state: State, deadline: number): Promise<Bundle
   if (top.length === 0 || supply === 0n) return { walletsChecked: 0, skipped: 0, groups: [] };
 
   // 2) Token hesaplarının sahipleri
-  const tokenAccs = await call<{ value: (AccountInfo | null)[] }>("getMultipleAccounts", [
-    top.map((a) => a.address),
-    { encoding: "jsonParsed" },
-  ]);
+  const tokenOwners = await tokenAccountOwners(top.map((a) => a.address), call);
   const held = state.held; // sahip → toplam miktar
-  tokenAccs.value.forEach((acc, i) => {
-    const owner = (acc?.data as { parsed?: { info?: { owner?: string } } } | undefined)?.parsed?.info?.owner;
+  tokenOwners.forEach((owner, i) => {
     if (!owner) return;
     held.set(owner, (held.get(owner) ?? 0n) + BigInt(top[i].amount));
   });
   const owners = [...held.keys()];
   if (owners.length === 0) return { walletsChecked: 0, skipped: 0, groups: [] };
 
-  // 3) Likidite havuzu / program hesaplarını çıkar:
-  //    gerçek cüzdan = System Program'a ait, çalıştırılabilir olmayan, var olan hesap.
-  //    Havuz kasalarının sahibi PDA'dır: ya zincirde hesabı yoktur ya da bir programa aittir.
-  const ownerAccs = await call<{ value: (AccountInfo | null)[] }>("getMultipleAccounts", [
-    owners,
-    { encoding: "base64", dataSlice: { offset: 0, length: 0 } },
-  ]);
-  const wallets = owners.filter((_, i) => {
-    const a = ownerAccs.value[i];
-    return !!a && a.owner === SYSTEM_PROGRAM && !a.executable;
-  });
+  // 3) Likidite havuzu / program hesaplarını çıkar (lib/onchain/owners.ts)
+  const walletFlags = await isWalletOwner(owners, call);
+  const wallets = owners.filter((_, i) => walletFlags[i]);
   state.wallets = wallets;
   state.links = new Array(wallets.length).fill(undefined);
 

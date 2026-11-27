@@ -44,11 +44,18 @@ if (!res.ok) {
 - `checks[].technical`: kısa teknik değer ("Teknik detay" altında), ör. `mintAuthority: null`
 - `summary`: AI özeti (null olabilir)
 - `positiveSignals`: yeşil etiketler
-- `holderDistribution`: "Para kimin elinde?" paneli, arzın yüzdesi (0–100). Alınamazsa `null`.
+- `holderDistribution`: "Para kimin elinde?" paneli, satırlar halinde arzın yüzdesi (0–100). Alınamazsa `null`.
   ```json
-  { "wallet1": 9.95, "wallet2": 4.8, "wallet3": 2.54, "wallets4to10": 5.21, "others": 77.5 }
+  [
+    { "kind": "pool", "rank": 1, "pct": 9.95 },
+    { "kind": "wallet", "rank": 2, "pct": 4.8 },
+    { "kind": "wallet", "rank": 3, "pct": 2.54 },
+    { "kind": "wallets4to10", "rank": null, "pct": 5.21 },
+    { "kind": "others", "rank": null, "pct": 77.5 }
+  ]
   ```
-  En büyük hesaplar likidite havuzu olabilir.
+  `pool` = likidite havuzu / program hesabı ("Likidite havuzu" diye etiketlenir); 4.–10. arasındaki
+  havuzlar ayrı `pool` satırı olur, `wallets4to10` sadece cüzdanları toplar.
 - `websiteNotes`: "Web sitesinde bulunanlar" paneli. Site incelenmediyse (site yok / AI kapalı) boş dizi.
   ```json
   [{ "text": "Şüpheli bir vaat bulunmadı.", "textEn": "No suspicious promises found.", "level": "ok" }]

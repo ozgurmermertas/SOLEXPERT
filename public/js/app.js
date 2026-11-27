@@ -102,14 +102,14 @@
 
   // Yüzdeleri tasarımdaki gibi tam sayı göster (1'in altındakiler tek ondalık); toplam 100 olsun.
   const pctView = (p) => (p >= 1 ? Math.round(p) : Math.round(p * 10) / 10);
+  // holderDistribution satırları: likidite havuzu / program hesapları "Likidite havuzu" olarak etiketlenir.
   function toHolders(d) {
-    if (!d) return [];
-    const rows = [
-      { label: T("Cüzdan #1", "Wallet #1"), pct: pctView(d.wallet1) },
-      { label: T("Cüzdan #2", "Wallet #2"), pct: pctView(d.wallet2) },
-      { label: T("Cüzdan #3", "Wallet #3"), pct: pctView(d.wallet3) },
-      { label: T("Cüzdan #4–10", "Wallets #4–10"), pct: pctView(d.wallets4to10) },
-    ];
+    if (!Array.isArray(d) || !d.length) return [];
+    const label = (r) =>
+      r.kind === "pool" ? T("Likidite havuzu", "Liquidity pool")
+      : r.kind === "wallet" ? T("Cüzdan #" + r.rank, "Wallet #" + r.rank)
+      : T("Cüzdan #4–10", "Wallets #4–10");
+    const rows = d.filter((r) => r.kind !== "others").map((r) => ({ label: label(r), pct: pctView(r.pct) }));
     const others = Math.max(0, Math.round((100 - rows.reduce((s, r) => s + r.pct, 0)) * 10) / 10);
     rows.push({ label: T("Diğer herkes", "Everyone else"), pct: others });
     return rows;
@@ -235,7 +235,7 @@
     // Cüzdan dağılımı alınamadıysa panel yerinde kalır, "veri yok" yazar.
     const NO_DATA = T("— Veri yok", "— No data");
     $("#holders").innerHTML = (r.holders || []).map((h) => `
-      <div class="hbar ${h.pct >= 25 && !/diğer|other|everyone/i.test(h.label) ? "big" : ""}">
+      <div class="hbar ${h.pct >= 25 && !/diğer|other|everyone|havuz|pool/i.test(h.label) ? "big" : ""}">
         <span>${esc(h.label)}</span><div class="track"><div class="fill" data-w="${+h.pct}"></div></div><b>${L.lang === "en" ? +h.pct + "%" : "%" + +h.pct}</b>
       </div>`).join("") || esc(NO_DATA);
     setTimeout(() => document.querySelectorAll(".hbar .fill").forEach((f) => (f.style.width = f.dataset.w + "%")), 100);
