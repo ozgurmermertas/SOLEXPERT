@@ -7,22 +7,274 @@
   "verdictLabel": "TEMİZ GÖRÜNÜYOR",
   "summary": "Bu token temiz görünüyor. Yeni token basma ve dondurma yetkileri kapatılmış, arz geniş bir kitleye dağılmış ve web sitesinde şüpheli bir vaat bulunmadı. Yine de her yatırım risk taşır.",
   "checks": [
-    { "id": "mint_authority", "label": "Yeni para basılabilir mi?", "status": "ok", "detail": "Hayır. Mint yetkisi kalıcı olarak kapatılmış.", "raw": "mintAuthority: null" },
-    { "id": "freeze_authority", "label": "Satışın dondurulabilir mi?", "status": "ok", "detail": "Hayır. Freeze yetkisi kapatılmış.", "raw": "freezeAuthority: null" },
-    { "id": "top_holders", "label": "Para kimin elinde?", "status": "ok", "detail": "İlk 10 cüzdan arzın %18'ini tutuyor.", "raw": "top10Share: 0.18" },
-    { "id": "liquidity", "label": "Likidite yeterli mi?", "status": "ok", "detail": "Havuzda yaklaşık 2,4 milyon $ likidite var.", "raw": "liquidityUsd: 2400000" },
-    { "id": "website", "label": "Web sitesi güvenilir mi?", "status": "ok", "detail": "Şüpheli vaat bulunmadı; dokümantasyon ve ekip bilgisi mevcut.", "raw": "flags: 0" }
+    {
+      "id": "mint_authority",
+      "label": "Yeni para basılabilir mi?",
+      "status": "ok",
+      "detail": "Hayır. Mint yetkisi kalıcı olarak kapatılmış.",
+      "raw": "mintAuthority: null"
+    },
+    {
+      "id": "freeze_authority",
+      "label": "Satışın dondurulabilir mi?",
+      "status": "ok",
+      "detail": "Hayır. Freeze yetkisi kapatılmış.",
+      "raw": "freezeAuthority: null"
+    },
+    {
+      "id": "top_holders",
+      "label": "Para kimin elinde?",
+      "status": "ok",
+      "detail": "İlk 10 cüzdan arzın %18'ini tutuyor.",
+      "raw": "top10Share: 0.18"
+    },
+    {
+      "id": "liquidity",
+      "label": "Likidite yeterli mi?",
+      "status": "ok",
+      "detail": "Havuzda yaklaşık 2,4 milyon $ likidite var.",
+      "raw": "liquidityUsd: 2400000"
+    },
+    {
+      "id": "website",
+      "label": "Web sitesi güvenilir mi?",
+      "status": "ok",
+      "detail": "Şüpheli vaat bulunmadı; dokümantasyon ve ekip bilgisi mevcut.",
+      "raw": "flags: 0"
+    }
   ],
   "holders": [
-    { "label": "Cüzdan #1", "pct": 4 },
-    { "label": "Cüzdan #2", "pct": 3 },
-    { "label": "Cüzdan #3", "pct": 3 },
-    { "label": "Cüzdan #4–10", "pct": 8 },
-    { "label": "Diğer herkes", "pct": 82 }
+    {
+      "label": "Cüzdan #1",
+      "pct": 4
+    },
+    {
+      "label": "Cüzdan #2",
+      "pct": 3
+    },
+    {
+      "label": "Cüzdan #3",
+      "pct": 3
+    },
+    {
+      "label": "Cüzdan #4–10",
+      "pct": 8
+    },
+    {
+      "label": "Diğer herkes",
+      "pct": 82
+    }
   ],
   "siteFlags": [
-    { "text": "Şüpheli bir vaat bulunmadı.", "level": "ok" }
+    {
+      "text": "Şüpheli bir vaat bulunmadı.",
+      "level": "ok"
+    }
   ],
   "audioUrl": null,
-  "createdAt": "2026-11-26T12:00:00Z"
+  "createdAt": "2026-11-26T12:00:00Z",
+  "charts": [
+    {
+      "id": "price",
+      "tone": "ok",
+      "status": "Son 7 gün",
+      "badge": "7G",
+      "title": "7 günlük fiyat değişimi",
+      "value": 12.4,
+      "prefix": "+%",
+      "suffix": "",
+      "decimals": 1,
+      "trend": "up",
+      "caption": "Ani sıçrama ya da çöküş yok; istikrarlı bir hareket.",
+      "data": [
+        0.84,
+        0.8631,
+        0.858,
+        0.8378,
+        0.8378,
+        0.8636,
+        0.8831,
+        0.8734,
+        0.8543,
+        0.8595,
+        0.887,
+        0.9022,
+        0.8884,
+        0.8716,
+        0.8819,
+        0.91,
+        0.9203,
+        0.9034,
+        0.8897,
+        0.9049,
+        0.9324,
+        0.9376,
+        0.9185,
+        0.9088,
+        0.9283,
+        0.9541,
+        0.954,
+        0.9338
+      ],
+      "labels": [
+        "Gün 1 · 00:00",
+        "Gün 1 · 06:00",
+        "Gün 1 · 12:00",
+        "Gün 1 · 18:00",
+        "Gün 2 · 00:00",
+        "Gün 2 · 06:00",
+        "Gün 2 · 12:00",
+        "Gün 2 · 18:00",
+        "Gün 3 · 00:00",
+        "Gün 3 · 06:00",
+        "Gün 3 · 12:00",
+        "Gün 3 · 18:00",
+        "Gün 4 · 00:00",
+        "Gün 4 · 06:00",
+        "Gün 4 · 12:00",
+        "Gün 4 · 18:00",
+        "Gün 5 · 00:00",
+        "Gün 5 · 06:00",
+        "Gün 5 · 12:00",
+        "Gün 5 · 18:00",
+        "Gün 6 · 00:00",
+        "Gün 6 · 06:00",
+        "Gün 6 · 12:00",
+        "Gün 6 · 18:00",
+        "Gün 7 · 00:00",
+        "Gün 7 · 06:00",
+        "Gün 7 · 12:00",
+        "Gün 7 · 18:00"
+      ],
+      "hover": {
+        "prefix": "$",
+        "decimals": 3
+      }
+    },
+    {
+      "id": "holders",
+      "tone": "ok",
+      "status": "Canlı",
+      "badge": "İlk 20",
+      "title": "İlk 10 cüzdanın payı",
+      "value": 18,
+      "prefix": "%",
+      "suffix": "",
+      "decimals": 0,
+      "trend": "none",
+      "caption": "Arz geniş bir kitleye dağılmış; tek bir grup fiyatı yönetemez.",
+      "data": [
+        4,
+        3,
+        3,
+        2,
+        1.5,
+        1.5,
+        1,
+        1,
+        0.5,
+        0.5,
+        0.6,
+        0.6,
+        0.6,
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.4,
+        0.4,
+        0.4
+      ],
+      "labels": [
+        "1. cüzdan",
+        "2. cüzdan",
+        "3. cüzdan",
+        "4. cüzdan",
+        "5. cüzdan",
+        "6. cüzdan",
+        "7. cüzdan",
+        "8. cüzdan",
+        "9. cüzdan",
+        "10. cüzdan",
+        "11. cüzdan",
+        "12. cüzdan",
+        "13. cüzdan",
+        "14. cüzdan",
+        "15. cüzdan",
+        "16. cüzdan",
+        "17. cüzdan",
+        "18. cüzdan",
+        "19. cüzdan",
+        "20. cüzdan"
+      ],
+      "hover": {
+        "prefix": "%",
+        "decimals": 1
+      }
+    },
+    {
+      "id": "liquidity",
+      "tone": "ok",
+      "status": "Son 7 gün",
+      "badge": "7G",
+      "title": "Havuz likiditesi",
+      "value": 2.4,
+      "prefix": "$",
+      "suffix": "M",
+      "decimals": 1,
+      "trend": "up",
+      "caption": "Derin ve büyüyen likidite; büyük satışları kaldırabilir.",
+      "data": [
+        1.9,
+        1.95,
+        2.0,
+        2.02,
+        2.05,
+        2.08,
+        2.1,
+        2.12,
+        2.15,
+        2.17,
+        2.2,
+        2.22,
+        2.25,
+        2.27,
+        2.3,
+        2.32,
+        2.34,
+        2.36,
+        2.37,
+        2.39,
+        2.4
+      ],
+      "labels": [
+        "Gün 1",
+        "Gün 1",
+        "Gün 1",
+        "Gün 2",
+        "Gün 2",
+        "Gün 2",
+        "Gün 3",
+        "Gün 3",
+        "Gün 3",
+        "Gün 4",
+        "Gün 4",
+        "Gün 4",
+        "Gün 5",
+        "Gün 5",
+        "Gün 5",
+        "Gün 6",
+        "Gün 6",
+        "Gün 6",
+        "Gün 7",
+        "Gün 7",
+        "Gün 7"
+      ],
+      "hover": {
+        "prefix": "$",
+        "suffix": "M",
+        "decimals": 2
+      }
+    }
+  ]
 }

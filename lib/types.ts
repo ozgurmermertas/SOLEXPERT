@@ -60,6 +60,12 @@ export interface HolderRow {
 
 export type HolderDistribution = HolderRow[];
 
+/** Fiyat geçmişinde bir nokta (eskiden yeniye). */
+export interface PricePoint {
+  t: string;        // ISO zaman
+  priceUsd: number;
+}
+
 /** Resmi site analizinden bir gözlem. */
 export interface WebsiteNote {
   text: string;          // Türkçe
@@ -73,7 +79,9 @@ export interface TokenReport {
   level: RiskLevel;
   checks: CheckResult[];
   positiveSignals: string[]; // Örn: "Jupiter doğrulanmış listesinde"
-  holderDistribution: HolderDistribution | null; // "Para kimin elinde?" paneli; alınamazsa null
+  holderDistribution: HolderDistribution | null; // ilk 10'un özet dağılımı; alınamazsa null
+  topHolders: HolderRow[] | null;   // ilk 20 hesap tek tek (dağılım grafiği); alınamazsa null
+  priceHistory: PricePoint[] | null; // son 7 gün, 4 saatlik (fiyat grafiği; GeckoTerminal); yoksa null
   websiteNotes: WebsiteNote[]; // "Web sitesinde bulunanlar" paneli; site incelenmediyse boş
   summary: string | null;    // LLM'in yazdığı özet, istenen dilde (lib/ai/report.ts)
   attestationTx: string | null; // Devnet memo işlem imzası

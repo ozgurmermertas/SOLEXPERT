@@ -115,16 +115,68 @@
     return rows;
   }
 
+  // ---------- Grafikler (Rojin'in Peak Chart kartları) — sadece gerçek veriyle ----------
+  // Fiyat: priceHistory (GeckoTerminal, son 7 gün) · Dağılım: topHolders (RPC, ilk 20 hesap).
+  // Likidite geçmişi için gerçek bir kaynak yok: o grafik çizilmez (sahte veri gösterilmez).
+  const pctFmt = (v, d) => v.toLocaleString(L.lang === "en" ? "en-US" : "tr-TR", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const signed = (up) => (L.lang === "en" ? { prefix: up ? "+" : "−", suffix: "%" } : { prefix: up ? "+%" : "−%", suffix: "" });
+  const pctAffix = () => (L.lang === "en" ? { prefix: "", suffix: "%" } : { prefix: "%", suffix: "" });
+  const usdDecimals = (p) => (p < 0.0001 ? 8 : p < 0.01 ? 6 : p < 1 ? 4 : 2);
+  const usdText = (p) => "$" + p.toLocaleString(L.lang === "en" ? "en-US" : "tr-TR", { maximumFractionDigits: usdDecimals(p) });
+
+  function priceChart(points) {
+    if (!Array.isArray(points) || points.length < 2) return null;
+    const prices = points.map((p) => p.priceUsd);
+    const first = prices[0], last = prices[prices.length - 1], peak = Math.max(...prices);
+    const change = (last / first - 1) * 100;
+    const fromPeak = (1 - last / peak) * 100;
+    // Zirveden sert düşüş varsa onu göster (pump-and-dump izi), yoksa 7 günlük değişimi
+    const showPeak = fromPeak >= 40;
+    const value = showPeak ? fromPeak : Math.abs(change);
+    const up = !showPeak && change >= 0;
+    const tone = fromPeak >= 70 ? "danger" : fromPeak >= 40 || change <= -30 ? "warn" : "ok";
+    const loc = L.lang === "en" ? "en-US" : "tr-TR";
+    return {
+      id: "price", tone,
+      title: showPeak ? T("Zirveden fiyat değişimi", "Change from peak") : T("7 günlük fiyat değişimi", "7-day price change"),
+      caption: T(`Zirve ${usdText(peak)} · şimdi ${usdText(last)}`, `Peak ${usdText(peak)} · now ${usdText(last)}`),
+      status: T("Son 7 gün", "Last 7 days"), badge: T("7G", "7D"),
+      value: Math.round(value * 10) / 10, decimals: 1, ...signed(up), trend: up ? "up" : "down",
+      data: prices,
+      labels: points.map((p) => new Date(p.t).toLocaleString(loc, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })),
+      hover: { prefix: "$", decimals: usdDecimals(Math.min(...prices)) },
+    };
+  }
+
+  function holdersChart(rows, card) {
+    if (!Array.isArray(rows) || rows.length < 2) return null;
+    const top10 = rows.slice(0, 10).reduce((s, r) => s + r.pct, 0);
+    const a = pctAffix();
+    return {
+      id: "holders", tone: card && ["danger", "warn", "ok"].includes(card.status) ? card.status : "warn",
+      title: T("İlk 10 cüzdanın payı", "Share held by top 10 wallets"),
+      caption: card ? card.detail.split(/(?<=\.)\s+/)[0] : "", // tasarımdaki gibi tek cümle (en önemli bulgu)
+      status: T("Canlı", "Live"), badge: T("İlk " + rows.length, "Top " + rows.length),
+      value: Math.round(top10 * 10) / 10, decimals: 1, ...a, trend: "none", // kartla aynı hassasiyet
+      data: rows.map((r) => r.pct),
+      labels: rows.map((r) => (r.kind === "pool" ? T("Likidite havuzu", "Liquidity pool") : T("Cüzdan #" + r.rank, "Wallet #" + r.rank))),
+      hover: { ...a, decimals: 2 },
+    };
+  }
+
   function toView(tr, address) {
     const score = Math.max(0, Math.min(100, Math.round(tr.score) || 0));
     const byId = Object.fromEntries(tr.checks.map((c) => [c.id, c]));
+    const cards = CARDS.map((card) => toCard(card, byId)).filter(Boolean);
+    const holdersCard = cards.find((c) => c.id === "top_holders");
     return {
+      charts: [priceChart(tr.priceHistory), holdersChart(tr.topHolders, holdersCard)].filter(Boolean),
       address: (tr.token && tr.token.address) || address,
       riskScore: score,
       // level yoksa CLAUDE.md aralıkları: 0–30 düşük, 31–60 dikkat, 61–100 yüksek
       verdict: LEVEL[tr.level] || (score >= 61 ? "danger" : score >= 31 ? "warn" : "ok"),
       summary: typeof tr.summary === "string" ? tr.summary.trim() : "",
-      checks: CARDS.map((card) => toCard(card, byId)).filter(Boolean),
+      checks: cards,
       holders: toHolders(tr.holderDistribution),
       siteFlags: (tr.websiteNotes || []).map((n) => ({
         text: (L.lang === "en" && n.textEn) || n.text,
@@ -209,7 +261,38 @@
   const ICON = { danger: "✕", warn: "!", ok: "✓" };
   const COLOR = { danger: "var(--danger)", warn: "var(--warn)", ok: "var(--ok)" };
 
+  // ---------- Peak Chart sonuç kartları ----------
+  const TONE = { danger: "#ff4d5e", warn: "#f0a020", ok: "#2ec99a" };
+  let charts = [];
+  const chartWidth = () => {
+    const row = $("#peak-row"), w = row.clientWidth || 1000;
+    if (w < 640) return Math.min(380, w);            // telefonda alt alta
+    if (w < 1000) return Math.floor((w - 24) / 2);   // tablette 2'li
+    return Math.min(380, Math.floor((w - 48) / 3));  // masaüstünde 3'lü
+  };
+  function chartOpts(c) {
+    const h = c.hover || {}, loc = L.lang === "en" ? "en-US" : "tr-TR";
+    return {
+      data: c.data || [0, 0], labels: c.labels || null, value: +c.value || 0,
+      prefix: c.prefix || "", suffix: c.suffix || "", decimals: c.decimals | 0,
+      title: c.title || "", caption: c.caption || "", status: c.status || "", badge: c.badge || "",
+      trend: c.trend || "none", accent: TONE[c.tone] || c.accent || "#4f8ef7", locale: loc, width: chartWidth(),
+      formatValue: (v) => (h.prefix || "") + v.toLocaleString(loc, { minimumFractionDigits: h.decimals | 0, maximumFractionDigits: h.decimals | 0 }) + (h.suffix || ""),
+    };
+  }
+  function renderCharts(list) {
+    const row = $("#peak-row");
+    row.classList.toggle("hidden", !list.length);
+    if (!window.PeakChart) return;
+    // aynı sayıda grafik varsa yeniden kurmak yerine güncelle: çizgi yumuşakça yeni veriye geçer
+    if (charts.length === list.length && charts.length) { list.forEach((c, i) => charts[i].update(chartOpts(c))); return; }
+    charts.forEach((c) => c.destroy()); charts = [];
+    list.forEach((c) => charts.push(window.PeakChart.mount(row, chartOpts(c))));
+  }
+  window.addEventListener("resize", () => { const w = chartWidth(); charts.forEach((c) => c.resize(w)); });
+
   function render(r) {
+    $("#report").classList.remove("hidden"); // grafik genişliği doğru ölçülsün diye önce görünür yap
     const score = Math.max(0, Math.min(100, r.riskScore | 0));
     const verdict = r.verdict || (score >= 66 ? "danger" : score >= 33 ? "warn" : "ok");
     const label = r.verdictLabel || L.t("verdict." + verdict);
@@ -225,26 +308,37 @@
     const v = $("#verdict"); v.textContent = label; v.className = "verdict " + verdict;
     $("#summary").textContent = r.summary || "";
 
+    // "unknown": bir kontrol verisi alınamadığında (backend "bilinmiyor")
+    const STATUS = { danger: T("Riskli", "Risky"), warn: T("Dikkat", "Caution"), ok: T("Temiz", "Clear"), unknown: T("Bilinmiyor", "Unknown") };
     $("#checks").innerHTML = (r.checks || []).map((c) => `
-      <div class="check ${esc(c.status)}">
-        <h4><span>${ICON[c.status] || "•"}</span>${esc(c.label)}</h4>
+      <article class="check ${esc(c.status)}">
+        <header>
+          <span class="check-pill"><i></i>${esc(STATUS[c.status] || "")}</span>
+          <span class="check-ico" aria-hidden="true">${ICON[c.status] || "•"}</span>
+        </header>
+        <h4>${esc(c.label)}</h4>
         <p>${esc(c.detail)}</p>
         ${c.raw ? `<details><summary>${esc(L.t("rep.tech"))}</summary><code>${esc(c.raw)}</code></details>` : ""}
-      </div>`).join("");
+      </article>`).join("");
 
-    // Cüzdan dağılımı alınamadıysa panel yerinde kalır, "veri yok" yazar.
-    const NO_DATA = T("— Veri yok", "— No data");
-    $("#holders").innerHTML = (r.holders || []).map((h) => `
-      <div class="hbar ${h.pct >= 25 && !/diğer|other|everyone|havuz|pool/i.test(h.label) ? "big" : ""}">
-        <span>${esc(h.label)}</span><div class="track"><div class="fill" data-w="${+h.pct}"></div></div><b>${L.lang === "en" ? +h.pct + "%" : "%" + +h.pct}</b>
-      </div>`).join("") || esc(NO_DATA);
-    setTimeout(() => document.querySelectorAll(".hbar .fill").forEach((f) => (f.style.width = f.dataset.w + "%")), 100);
+    renderCharts(r.charts || []);
 
-    // Site incelenmediyse (site yok / AI kapalı) Rojin'in "site bulunamadı" satırı gösterilir.
-    $("#flags").innerHTML = (r.siteFlags || []).map((f) => `<li class="${f.level === "ok" ? "clean" : ""}">${esc(f.text)}</li>`).join("")
-      || `<li class="clean">${esc(L.t("rep.noSite"))}</li>`;
+    // Site bulguları: kontrol kartlarıyla aynı kart yapısı (rozet + ikon + metin)
+    const FLAG = { warn: T("Şüpheli", "Suspicious"), danger: T("Tehlikeli", "Dangerous"), ok: T("Temiz", "Clear") };
+    const flags = (r.siteFlags || []).length ? r.siteFlags : [{ text: L.t("rep.noSite"), level: "ok" }];
+    $("#flags").innerHTML = flags.map((f) => {
+      const lv = ["warn", "danger", "ok"].includes(f.level) ? f.level : "warn";
+      const quote = /^["“]/.test(f.text || "");
+      return `
+      <article class="check flag ${lv}">
+        <header>
+          <span class="check-pill"><i></i>${esc(FLAG[lv])}</span>
+          <span class="check-ico" aria-hidden="true">${ICON[lv] || "!"}</span>
+        </header>
+        <p class="flag-text${quote ? " quote" : ""}">${esc(f.text)}</p>
+      </article>`;
+    }).join("");
 
-    $("#report").classList.remove("hidden");
     window.Mascot.setReport(r.summary, r.audioUrl);
     window.Mascot.say(verdict === "danger"
       ? T("Bu tokendan uzak durun! 'Raporu dinle' butonuna basın, anlatayım.", "Stay away from this token! Press 'Listen to the report' and I'll explain.")

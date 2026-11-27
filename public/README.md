@@ -15,6 +15,7 @@ npx serve .        # ya da: python3 -m http.server
 | `js/app.js` | Form, analiz adımları, rapor çizimi, sayaçlar, paylaşım linki (`?address=`) |
 | `js/mascot.js` | Ekspi baykuşu: kaydırınca yay hareketiyle takip eder, bölüme göre konuşur, tıklayınca sesli okur |
 | `js/voice.js` | Ses: `audioUrl` → `/api/tts` (ElevenLabs) → tarayıcı sesi (yedek) |
+| `js/peak-chart.js` | Sonuç grafikleri: 21st.dev "Peak Chart" (Louis Studios) bileşeninin React'siz uyarlaması |
 | `js/coins.js` | Arka planda dönen coinler (canvas) |
 | `js/i18n.js` | Türkçe / İngilizce metinler ve dil düğmesi |
 | `js/facts.js` | Ekspi'nin anlattığı istatistikler (TR + EN) |
@@ -40,6 +41,13 @@ npx serve .        # ya da: python3 -m http.server
   "checks": [{ "id": "mint_authority", "label": "…", "status": "danger", "detail": "…", "raw": "teknik değer" }],
   "holders": [{ "label": "Cüzdan #1", "pct": 41 }],
   "siteFlags": [{ "text": "\"Garanti 100x\"", "level": "warn" }],
+  "charts": [{                        // sonuç grafikleri (Peak Chart kartları), 1–3 adet
+    "id": "price", "tone": "danger",  // danger | warn | ok → kart rengi
+    "title": "Zirveden fiyat değişimi", "caption": "…", "status": "Son 7 gün", "badge": "7G",
+    "value": 92, "prefix": "−%", "suffix": "", "decimals": 0, "trend": "down",
+    "data": [0.0021, 0.0190, 0.0015], "labels": ["Gün 1 · 00:00", "…"],
+    "hover": { "prefix": "$", "decimals": 4 }
+  }],
   "audioUrl": "https://…/report.mp3"  // veya null
 }
 ```

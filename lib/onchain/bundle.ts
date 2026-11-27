@@ -9,7 +9,7 @@
 // Süre dolunca: o ana kadar incelenen cüzdanlarda "tehlikeli" bir grup bulunduysa kısmi sonuç
 // döner (partial: true); bulunmadıysa hata fırlatır → analyze.ts'te null → kontrol "bilinmiyor".
 import { rpc } from "../http";
-import { isWalletOwner, tokenAccountOwners } from "./owners";
+import { getLargestAccounts, isWalletOwner, tokenAccountOwners } from "./owners";
 import type { BundleFacts, BundleGroup } from "../facts";
 
 const TOP_N = 12;
@@ -42,10 +42,6 @@ interface State {
 }
 
 export class BundleTimeoutError extends Error {}
-
-interface LargestAccounts {
-  value: { address: string; amount: string }[];
-}
 
 interface Signature {
   signature: string;
@@ -104,7 +100,8 @@ async function run(mint: string, state: State, deadline: number): Promise<Bundle
   const { supply } = state;
 
   // 1) En büyük 12 token hesabı
-  const largest = await call<LargestAccounts>("getTokenLargestAccounts", [mint]);
+  if (Date.now() > deadline) throw new BundleTimeoutError("bundle: süre doldu");
+  const largest = { value: await getLargestAccounts(mint) }; // holder kontrolüyle paylaşılır
   const top = largest.value.slice(0, TOP_N).filter((a) => a.amount !== "0");
   if (top.length === 0 || supply === 0n) return { walletsChecked: 0, skipped: 0, groups: [] };
 

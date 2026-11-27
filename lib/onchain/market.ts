@@ -7,6 +7,7 @@ import type { MarketFacts } from "../facts";
 interface Pair {
   chainId: string;
   dexId: string;
+  pairAddress?: string;
   baseToken: { address: string };
   priceUsd?: string;
   liquidity?: { usd?: number };
@@ -37,6 +38,7 @@ export async function getMarketFacts(address: string): Promise<MarketFacts | nul
     liquidityUsd: pairs.reduce((s, p) => s + (p.liquidity?.usd ?? 0), 0),
     pairCreatedAt: Number.isFinite(firstCreated) ? new Date(firstCreated).toISOString() : null,
     mainDexId: main.dexId,
+    mainPairAddress: main.pairAddress ?? null,
     website: normalizeUrl(withInfo.info?.websites?.[0]?.url),
     twitter: social("twitter"),
     telegram: social("telegram"),

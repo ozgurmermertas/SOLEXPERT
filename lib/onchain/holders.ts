@@ -2,25 +2,22 @@
 import { rpc } from "../http";
 import type { CreatorFacts, HolderFacts } from "../facts";
 import type { HolderRow } from "../types";
-import { isWalletOwner, tokenAccountOwners } from "./owners";
-
-interface LargestAccounts {
-  value: { address: string; amount: string }[];
-}
+import { getLargestAccounts, isWalletOwner, tokenAccountOwners } from "./owners";
 
 export async function getHolderFacts(address: string, supply: bigint): Promise<HolderFacts> {
-  const res = await rpc<LargestAccounts>("getTokenLargestAccounts", [address]);
-  if (supply === 0n) return { top10Pct: 0, largestPct: 0, distribution: [] };
+  const res = { value: await getLargestAccounts(address) };
+  if (supply === 0n) return { top10Pct: 0, largestPct: 0, distribution: [], topHolders: [] };
 
-  const top = res.value.slice(0, 10);
+  const top20 = res.value.slice(0, 20); // RPC en fazla 20 hesap döndürür
+  const top = top20.slice(0, 10);
   const amounts = top.map((a) => BigInt(a.amount));
   const top10 = amounts.reduce((s, a) => s + a, 0n);
 
   // Hangi hesaplar likidite havuzu / program? (bundle kontrolüyle aynı yöntem)
   // Okunamazsa hepsi cüzdan sayılır: panel yine dolar, sadece etiket "havuz" olmaz.
-  let isPool = top.map(() => false);
+  let isPool = top20.map(() => false);
   try {
-    const owners = await tokenAccountOwners(top.map((a) => a.address));
+    const owners = await tokenAccountOwners(top20.map((a) => a.address));
     const known = owners.filter((o): o is string => !!o);
     const flags = await isWalletOwner(known);
     const wallet = new Map(known.map((o, i) => [o, flags[i]]));
@@ -43,10 +40,16 @@ export async function getHolderFacts(address: string, supply: bigint): Promise<H
   const shown = rows.reduce((s, r) => s + r.pct, 0);
   rows.push({ kind: "others", rank: null, pct: Math.max(0, Math.round((100 - shown) * 100) / 100) });
 
+  // İlk 20 hesap tek tek (arayüzdeki dağılım grafiği için)
+  const topHolders: HolderRow[] = top20.map((a, i) => ({
+    kind: isPool[i] ? "pool" : "wallet", rank: i + 1, pct: Number((BigInt(a.amount) * 1_000_000n) / supply) / 10_000, // 4 ondalık: toplamı kartla tutsun
+  }));
+
   return {
     top10Pct: pct(top10, supply),
     largestPct: pct(amounts[0] ?? 0n, supply),
     distribution: rows,
+    topHolders,
   };
 }
 

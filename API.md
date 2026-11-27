@@ -56,6 +56,10 @@ if (!res.ok) {
   ```
   `pool` = likidite havuzu / program hesabı ("Likidite havuzu" diye etiketlenir); 4.–10. arasındaki
   havuzlar ayrı `pool` satırı olur, `wallets4to10` sadece cüzdanları toplar.
+- `topHolders`: ilk 20 hesap tek tek (`{ kind: "wallet" | "pool", rank, pct }`), dağılım grafiği için. Alınamazsa `null`.
+- `priceHistory`: en derin havuzun son 7 günü, 4 saatlik kapanış fiyatları (`{ t, priceUsd }`, eskiden yeniye),
+  fiyat grafiği için. Kaynak GeckoTerminal; puanı etkilemez. Alınamazsa ya da 2'den az nokta varsa `null`.
+  (Likidite geçmişi için kaynak yok: arayüz likidite grafiğini çizmez.)
 - `websiteNotes`: "Web sitesinde bulunanlar" paneli. Site incelenmediyse (site yok / AI kapalı) boş dizi.
   ```json
   [{ "text": "Şüpheli bir vaat bulunmadı.", "textEn": "No suspicious promises found.", "level": "ok" }]

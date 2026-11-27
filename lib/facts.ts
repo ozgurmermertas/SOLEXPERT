@@ -1,6 +1,6 @@
 // Kontrol modüllerinin topladığı HAM gerçekler.
 // Puanlama bu gerçeklerden lib/scoring/score.ts içinde yapılır.
-import type { HolderDistribution, WebsiteNote } from "./types";
+import type { HolderDistribution, HolderRow, WebsiteNote } from "./types";
 
 export interface Token2022Flags {
   transferFeeBps: number;          // 0 = vergi yok
@@ -32,6 +32,7 @@ export interface HolderFacts {
   top10Pct: number;   // 0–100
   largestPct: number; // en büyük tek hesap
   distribution: HolderDistribution;
+  topHolders: HolderRow[]; // ilk 20 hesap tek tek (wallet/pool)
 }
 
 export interface CreatorFacts {
@@ -58,6 +59,7 @@ export interface MarketFacts {
   liquidityUsd: number;      // tüm Solana havuzlarının toplamı
   pairCreatedAt: string | null;
   mainDexId: string | null;
+  mainPairAddress: string | null; // en derin havuzun adresi (fiyat geçmişi için)
   website: string | null;
   twitter: string | null;
   telegram: string | null;

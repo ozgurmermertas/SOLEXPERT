@@ -52,6 +52,8 @@ lib/
     metadata.ts             (isim, sembol, resmi site/twitter/telegram linkleri)
     holders.ts              (ilk 10 holder + oluşturan cüzdan ve payı)
     bundle.ts               (bağlantılı cüzdanlar: aynı kaynaktan fonlanan büyük holderlar)
+    owners.ts               (cüzdan mı havuz/program mı? + en büyük hesaplar, paylaşılan sorgu)
+    priceHistory.ts         (GeckoTerminal: son 7 gün fiyat, sadece grafik için)
     market.ts               (DexScreener: likidite, yaş, linkler)
     sellTest.ts             (Jupiter satış teklifi)
     lpLock.ts               (likidite kilidi: pump.fun eğrisi / RugCheck)
@@ -96,7 +98,7 @@ Skor aralıkları: 0–30 düşük (yeşil), 31–60 dikkat (sarı), 61–100 y�
 birbirine ≤ 1 saat olan cüzdanları bağlar. 1000+ işlemli holder cüzdanı atlanır.
 Aynı anda en fazla 3 RPC isteği (Helius 429'u azaltmak için); tüm kontrol en fazla 12 sn.
 Süre dolunca o ana kadar incelenenlerde tehlikeli grup varsa kısmi sonuç kullanılır, yoksa "bilinmiyor".
-`lib/http.ts`: Helius 429 / "overloaded" dönerse istek 3 kez tekrar denenir.
+`lib/http.ts`: Helius 429 / "overloaded" dönerse istek 4 kez tekrar denenir (0,3 / 0,7 / 1,5 / 3 sn).
 
 Önbellek: `analyzeToken` sonucu 10 dk bellekte tutulur (adres + AI açık/kapalı + dil).
 Aynı anda gelen aynı istekler tek analizi paylaşır. Sunucu yeniden başlarsa boşalır.

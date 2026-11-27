@@ -6,6 +6,7 @@ import { getBundleFacts } from "./onchain/bundle";
 import { getMarketFacts } from "./onchain/market";
 import { getSellFacts } from "./onchain/sellTest";
 import { getLpFacts } from "./onchain/lpLock";
+import { getPriceHistory } from "./onchain/priceHistory";
 import { getWebsiteFacts } from "./offchain/website";
 import { aiEnabled } from "./ai/gemini";
 import { writeSummary } from "./ai/report";
@@ -77,9 +78,10 @@ async function runAnalysis(address: string, withAi: boolean): Promise<Base> {
   ]);
 
   // 3) Fiyat ve DEX bilgisine ihtiyaç duyanlar.
-  const [sell, lp] = await Promise.all([
+  const [sell, lp, priceHistory] = await Promise.all([
     safe("sell", getSellFacts(address, mint.decimals, market?.priceUsd ?? null)),
     safe("lp", getLpFacts(address, market?.mainDexId ?? null)),
+    safe("priceHistory", getPriceHistory(market?.mainPairAddress ?? null)), // sadece grafik, puanı etkilemez
   ]);
 
   // 4) Resmi site: önce token metadata'sındaki link, yoksa DexScreener'daki.
@@ -117,6 +119,8 @@ async function runAnalysis(address: string, withAi: boolean): Promise<Base> {
     checks,
     positiveSignals: positiveSignals(facts),
     holderDistribution: holders?.distribution ?? null,
+    topHolders: holders?.topHolders ?? null,
+    priceHistory: priceHistory ?? null,
     websiteNotes: websiteNotes(facts),
     attestationTx: null, // TODO (hackathon): rapor hash'ini devnet'e memo olarak yaz.
     analyzedAt: new Date().toISOString(),

@@ -23,7 +23,7 @@ export class HttpError extends Error {
 }
 
 // Helius hız limiti (429) dolunca bu aralıklarla tekrar denenir (ücretsiz katmanda sık olur).
-const RATE_LIMIT_BACKOFF_MS = [300, 700, 1500];
+const RATE_LIMIT_BACKOFF_MS = [300, 700, 1500, 3000];
 
 /** Helius üzerinden Solana JSON-RPC çağrısı (standart RPC ve DAS metotları). */
 export async function rpc<T>(method: string, params: unknown): Promise<T> {
