@@ -81,15 +81,20 @@
     { id: "website", tr: "Web sitesi güvenilir mi?", en: "Is the website trustworthy?", checks: ["website", "age"] },
   ];
 
-  function toCard(card, byId) {
-    const [primary, ...rest] = card.checks.map((id) => byId[id]).filter(Boolean);
+  // Kartta yeri olmayan (ileride eklenen) bir kontrol de kaybolmasın: grubunun kartına gider.
+  const GROUP_CARD = { anahtarlar: "freeze_authority", dagilim: "top_holders", alim_satim: "liquidity", proje: "website" };
+
+  function toCard(card, checks) {
+    const [primary, ...rest] = checks;
     if (!primary) return null;
-    // Ana kontrol + sorunlu yan kontroller; en ciddi olan önce (bundle tehlikeliyse metin onunla başlar)
-    const shown = [primary, ...rest.filter((c) => SEVERITY[c.status] >= 2)]
+    // Backend'in döndürdüğü HER kontrol kartında görünür; en ciddi olan önce
+    // (bundle tehlikeliyse metin onunla başlar). Renk: ana kontrol + sorunlu (dikkat/tehlikeli) yan kontroller.
+    const shown = [primary, ...rest]
       .map((c, i) => ({ c, i }))
       .sort((a, b) => SEVERITY[b.c.status] - SEVERITY[a.c.status] || a.i - b.i)
       .map((x) => x.c);
-    const worst = shown[0];
+    const worst = [primary, ...rest.filter((c) => SEVERITY[c.status] >= 2)]
+      .reduce((w, c) => (SEVERITY[c.status] > SEVERITY[w.status] ? c : w));
     const text = (c) => (L.lang === "en" && c.detailEn) || c.detail;
     return {
       id: card.id,
@@ -98,6 +103,17 @@
       detail: shown.map(text).join(" "),
       raw: shown.map((c) => c.technical).filter(Boolean).join(" · "),
     };
+  }
+
+  /** 5 karta dağıt: önce CARDS'taki eşleşme, eşleşmeyen kontroller grubunun kartına. */
+  function toCards(checks) {
+    const byId = Object.fromEntries(checks.map((c) => [c.id, c]));
+    const mapped = new Set(CARDS.flatMap((card) => card.checks));
+    return CARDS.map((card) => {
+      const own = card.checks.map((id) => byId[id]).filter(Boolean);
+      const extra = checks.filter((c) => !mapped.has(c.id) && (GROUP_CARD[c.group] || "website") === card.id);
+      return toCard(card, [...own, ...extra]);
+    }).filter(Boolean);
   }
 
   // Yüzdeleri tasarımdaki gibi tam sayı göster (1'in altındakiler tek ondalık); toplam 100 olsun.
@@ -166,8 +182,7 @@
 
   function toView(tr, address) {
     const score = Math.max(0, Math.min(100, Math.round(tr.score) || 0));
-    const byId = Object.fromEntries(tr.checks.map((c) => [c.id, c]));
-    const cards = CARDS.map((card) => toCard(card, byId)).filter(Boolean);
+    const cards = toCards(tr.checks);
     const holdersCard = cards.find((c) => c.id === "top_holders");
     return {
       charts: [priceChart(tr.priceHistory), holdersChart(tr.topHolders, holdersCard)].filter(Boolean),

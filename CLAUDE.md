@@ -22,6 +22,7 @@ Hackathon: Dev3pack (Solana), 27–29 Kasım 2026. Sponsorlar: Solana, Firecrawl
 6. Arayüz metinleri Türkçe. Kod (değişken/fonksiyon adları) İngilizce olabilir.
 7. AI özeti asla "güvenli" / "safe" demez (TR ve EN). Düşük riskte: "temel kontrollerde belirgin
    bir risk bulunamadı, ama bu bir garanti değil". `lib/ai/report.ts` yasaklı kelimeyi yakalarsa yeniden üretir.
+   Tehlikeli bulgu varsa "belirgin risk bulunamadı" demez; önce riskleri söyler (yakalanırsa yeniden üretilir).
 
 ## Teknoloji
 - Next.js (App Router) + TypeScript
@@ -80,14 +81,16 @@ API.md                      ← Frontend'in backend'i nasıl çağıracağı
 | dev_share | Geliştirici payı | >%10 | 10 |
 | bundle | Bağlantılı cüzdanlar (EN: Linked wallets) | Aynı kaynaktan fonlanan 3+ büyük holder **veya** grubun payı >%15 → 20 ve skor en az 61; 2 cüzdan → dikkat, 5 | 20 (+taban 61) |
 | sell_test | Satılabilirlik | Satış rotası yok | 30 |
-| liquidity | Likidite | < 10.000 $ | 10 |
+| liquidity | Likidite | < 5.000 $ (ya da havuz yok) → 20; < 10.000 $ → 10 | 20 |
 | lp_lock | Likidite kilidi | LP kilitli/yakılmış değil | 15 |
 | age | Token yaşı | < 24 saat | 5 |
 | website | Resmi site | Abartılı vaat veya zincirle çelişki → 10; sadece şablon/jenerik içerik → dikkat, 0 | 10 |
 
 Skor aralıkları: 0–30 düşük (yeşil), 31–60 dikkat (sarı), 61–100 yüksek (kırmızı).
-Özel kurallar:
-- `bundle` "tehlikeli" ise **skor en az 61** olur (dolayısıyla seviye yüksek).
+Özel kurallar (skor tabanları — skor seviyenin alt sınırına çıkar, gösterge ile seviye hep tutarlı):
+- `bundle` "tehlikeli" → skor en az **61** (yüksek).
+- 3 ya da daha fazla "tehlikeli" kontrol → skor en az **61** (yüksek); 2 tane → en az **31** (dikkat).
+- Token 24 saatten yeni (`age` "dikkat") **ve** likidite 10.000 $ altı (`liquidity` "tehlikeli") → skor en az **61** (yüksek).
 - `sell_test`, `liquidity` veya `top10` "bilinmiyor" ise seviye en az **dikkat** olur (skor değişmez).
 
 `bundle` yöntemi (`lib/onchain/bundle.ts`): en büyük 12 token hesabı → sahip cüzdanlar

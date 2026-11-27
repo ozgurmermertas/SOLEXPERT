@@ -176,7 +176,7 @@ export function buildChecks(f: Facts): CheckResult[] {
 
   const liqBase = { id: "liquidity", group: "alim_satim", title: "Likidite" } as const;
   if (!f.market) {
-    checks.push(result(liqBase, "tehlikeli", 10, {
+    checks.push(result(liqBase, "tehlikeli", 20, { // havuz yok = 0 $ → 5.000 $ altı kuralı
       tr: "Hiçbir DEX'te işlem gören bir havuz yok.",
       en: "No pool is trading on any DEX.",
     }, "liquidityUsd: 0"));
@@ -184,7 +184,9 @@ export function buildChecks(f: Facts): CheckResult[] {
     const l = f.market.liquidityUsd;
     const tech = `liquidityUsd: ${Math.round(l)}`;
     checks.push(
-      l < 10_000
+      l < 5_000
+        ? result(liqBase, "tehlikeli", 20, { tr: `Havuzda sadece ${usd(l)} likidite var, çok sığ.`, en: `The pool holds only ${usdEn(l)} in liquidity; very thin.` }, tech)
+      : l < 10_000
         ? result(liqBase, "tehlikeli", 10, { tr: `Havuzda sadece ${usd(l)} likidite var.`, en: `The pool holds only ${usdEn(l)} in liquidity.` }, tech)
         : result(liqBase, "gecti", 0, { tr: `Havuzda yaklaşık ${usd(l)} likidite var.`, en: `The pool holds about ${usdEn(l)} in liquidity.` }, tech),
     );
@@ -301,13 +303,33 @@ const TITLE_EN: Record<CheckResult["id"], string> = {
 // satılabilirlik, likidite ve holder dağılımı bilinmeden "düşük risk" denmez.
 const CRITICAL_IF_UNKNOWN: CheckResult["id"][] = ["sell_test", "liquidity", "top10"];
 
-// Arzın koordineli cüzdanlara bölünmesi tek başına ciddi bir işaret: skor en az bu değer olur (= yüksek).
-const BUNDLE_DANGER_MIN_SCORE = 61;
+// Seviyelerin skor alt sınırları (CLAUDE.md: 0–30 düşük, 31–60 dikkat, 61–100 yüksek).
+const MIN_DIKKAT = 31;
+const MIN_YUKSEK = 61;
+
+/**
+ * Skor tabanları: bazı durumlar puan toplamından bağımsız olarak seviyeyi yükseltir.
+ * Skor da o seviyenin alt sınırına çıkar, böylece gösterge ile seviye hep tutarlı kalır.
+ */
+function scoreFloor(checks: CheckResult[]): number {
+  const is = (id: CheckResult["id"], status: CheckResult["status"]) =>
+    checks.some((c) => c.id === id && c.status === status);
+  const dangerCount = checks.filter((c) => c.status === "tehlikeli").length;
+  let floor = 0;
+  // Arzın koordineli cüzdanlara bölünmesi tek başına ciddi bir işaret.
+  if (is("bundle", "tehlikeli")) floor = Math.max(floor, MIN_YUKSEK);
+  // Birden çok tehlikeli bulgu: 2+ → en az dikkat, 3+ → en az yüksek.
+  if (dangerCount >= 3) floor = Math.max(floor, MIN_YUKSEK);
+  else if (dangerCount >= 2) floor = Math.max(floor, MIN_DIKKAT);
+  // Çok yeni (< 24 saat; age "dikkat") VE sığ likidite (< 10.000 $; liquidity "tehlikeli"): tipik rug kurulumu.
+  if (is("age", "dikkat") && is("liquidity", "tehlikeli")) floor = Math.max(floor, MIN_YUKSEK);
+  return floor;
+}
 
 export function computeScore(checks: CheckResult[]): { score: number; level: RiskLevel } {
   let score = Math.min(100, checks.reduce((s, c) => s + c.points, 0));
-  if (checks.some((c) => c.id === "bundle" && c.status === "tehlikeli")) score = Math.max(score, BUNDLE_DANGER_MIN_SCORE);
-  let level: RiskLevel = score <= 30 ? "dusuk" : score <= 60 ? "dikkat" : "yuksek";
+  score = Math.max(score, scoreFloor(checks));
+  let level: RiskLevel = score < MIN_DIKKAT ? "dusuk" : score < MIN_YUKSEK ? "dikkat" : "yuksek";
   if (level === "dusuk" && checks.some((c) => c.status === "bilinmiyor" && CRITICAL_IF_UNKNOWN.includes(c.id))) {
     level = "dikkat";
   }
