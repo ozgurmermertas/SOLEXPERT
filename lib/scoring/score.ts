@@ -103,10 +103,23 @@ export function buildChecks(f: Facts): CheckResult[] {
 
   const devBase = { id: "dev_share", group: "dagilim", title: "Geliştirici payı" } as const;
   if (!f.creator) {
-    checks.push(unknown(devBase, {
-      tr: "Oluşturan cüzdan bulunamadı (token çok eski veya çok aktif).",
-      en: "The creator wallet could not be found (the token is very old or very active).",
-    }));
+    // Oluşturan cüzdan, token'ın en eski işleminden bulunur (en fazla 3.000 işlem geriye gidilir).
+    // Neden bulunamadığını token yaşına göre doğru söyle: yeni token'da "çok eski" demek yanlış olur.
+    const pairAt = f.market?.pairCreatedAt ? new Date(f.market.pairCreatedAt).getTime() : null;
+    const ageDays = pairAt ? (Date.now() - pairAt) / 86_400_000 : null;
+    checks.push(unknown(devBase,
+      ageDays === null
+        ? { tr: "Oluşturan cüzdan tespit edilemedi.", en: "The creator wallet could not be identified." }
+        : ageDays < 7
+          ? {
+              tr: "Oluşturan cüzdan tespit edilemedi: token yeni ama çok hızlı işlem gördüğü için ilk işlemine ulaşılamadı.",
+              en: "The creator wallet could not be identified: the token is new but trades so fast that its first transaction could not be reached.",
+            }
+          : {
+              tr: "Oluşturan cüzdan tespit edilemedi: token eski ve çok işlem görmüş, ilk işlemine ulaşılamadı.",
+              en: "The creator wallet could not be identified: the token is old and heavily traded, so its first transaction could not be reached.",
+            },
+    ));
   } else {
     const p = f.creator.creatorPct;
     const text: Text = { tr: `Oluşturan cüzdanın payı: %${fmt(p)}.`, en: `The creator wallet holds ${fmtEn(p)}%.` };
