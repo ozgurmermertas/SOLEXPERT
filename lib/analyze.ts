@@ -121,7 +121,6 @@ async function runAnalysis(address: string, withAi: boolean): Promise<Base> {
     holderDistribution: holders?.distribution ?? null,
     topHolders: holders?.topHolders ?? null,
     priceHistory: priceHistory ?? null,
-    liquidityToMcapPct: liquidityToMcap(market),
     websiteNotes: websiteNotes(facts),
     attestationTx: null, // TODO (hackathon): rapor hash'ini devnet'e memo olarak yaz.
     analyzedAt: new Date().toISOString(),
@@ -137,10 +136,4 @@ async function safe<T>(name: string, p: Promise<T>): Promise<T | null> {
     console.warn(`[analyze] ${name} başarısız:`, e instanceof Error ? e.message : e);
     return null;
   }
-}
-
-/** Likidite / piyasa değeri oranı (%), 2 ondalık. Sadece gösterge: puanlamada kullanılmaz. */
-function liquidityToMcap(market: Facts["market"]): number | null {
-  if (!market || !market.marketCapUsd || market.liquidityUsd <= 0) return null;
-  return Math.round((market.liquidityUsd / market.marketCapUsd) * 10_000) / 100;
 }
