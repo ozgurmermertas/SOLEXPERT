@@ -62,33 +62,105 @@
   }, { threshold: 0.4 });
   counters.forEach((c) => cio.observe(c));
 
-  // ---------- Veri katmanı ----------
-  async function fetchReport(address) {
-    if (cfg.USE_MOCK) {
-      const file = address === "DEMO_TEMIZ_TOKEN" ? "safe" : "risky";
-      const res = await fetch(`mocks/${file}${L.lang === "en" ? "-en" : ""}.json`);
-      const data = await res.json();
-      return { ...data, address };
-    }
-    const res = await fetch(cfg.API_BASE + cfg.ANALYZE_PATH, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ address, lang: L.lang }), // backend raporu bu dilde yazsın
-    });
-    if (!res.ok) throw new Error((await res.text()) || T("Analiz başarısız", "Analysis failed"));
-    return res.json();
+  // ---------- Veri katmanı: POST /api/analyze → TokenReport (lib/types.ts) ----------
+  const BASE58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+  class UserError extends Error {}
+
+  // TokenReport → bu tasarımın beklediği rapor şekli
+  const LEVEL = { dusuk: "ok", dikkat: "warn", yuksek: "danger" };
+  const STATUS = { gecti: "ok", dikkat: "warn", tehlikeli: "danger", bilinmiyor: "unknown" };
+  const GROUP_ORDER = ["anahtarlar", "dagilim", "alim_satim", "proje"]; // API.md'deki grup sırası
+  function toView(tr, address) {
+    const score = Math.max(0, Math.min(100, Math.round(tr.score) || 0));
+    const rank = (g) => { const i = GROUP_ORDER.indexOf(g); return i < 0 ? GROUP_ORDER.length : i; };
+    const checks = [...tr.checks]
+      .sort((a, b) => rank(a.group) - rank(b.group))
+      .map((c) => ({ id: c.id, label: c.title, status: STATUS[c.status] || "unknown", detail: c.detail }));
+    // Olumlu sinyaller mevcut kart tasarımıyla yeşil kart olarak eklenir
+    (tr.positiveSignals || []).filter(Boolean).forEach((s, i) =>
+      checks.push({ id: "positive_" + i, label: T("Olumlu sinyal", "Positive signal"), status: "ok", detail: s }));
+    return {
+      address: (tr.token && tr.token.address) || address,
+      riskScore: score,
+      // level yoksa CLAUDE.md aralıkları: 0–30 düşük, 31–60 dikkat, 61–100 yüksek
+      verdict: LEVEL[tr.level] || (score >= 61 ? "danger" : score >= 31 ? "warn" : "ok"),
+      summary: typeof tr.summary === "string" ? tr.summary.trim() : "",
+      checks,
+      holders: [],   // backend henüz vermiyor → panelde "veri yok"
+      siteFlags: [], // backend henüz vermiyor → panelde "veri yok"
+      audioUrl: null,
+    };
   }
 
-  // ---------- Analiz adımları ----------
+  async function fetchReport(address) {
+    if (!BASE58.test(address)) {
+      throw new UserError(T("Bu geçerli bir Solana token adresi gibi görünmüyor. Adresi kontrol edip tekrar deneyin.",
+        "This doesn't look like a valid Solana token address. Please check it and try again."));
+    }
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), cfg.ANALYZE_TIMEOUT_MS || 65000);
+    let res;
+    try {
+      res = await fetch(cfg.API_BASE + cfg.ANALYZE_PATH, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address, lang: L.lang }), // backend şu an sadece Türkçe yazıyor; lang ileride kullanılabilir
+        signal: ctrl.signal,
+      });
+    } catch (e) {
+      if (e && e.name === "AbortError") throw new UserError(T("Analiz çok uzun sürdü. Biraz sonra tekrar deneyin.", "The analysis took too long. Please try again shortly."));
+      throw new UserError(T("Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.", "Couldn't reach the server. Check your connection and try again."));
+    } finally {
+      clearTimeout(timer);
+    }
+    let data = null;
+    try { data = await res.json(); } catch (_) {}
+    if (!res.ok) {
+      // Backend 400/500'de Türkçe { error } döndürür (bkz. API.md)
+      if (data && typeof data.error === "string" && data.error.trim()) throw new UserError(data.error);
+      if (res.status === 400) throw new UserError(T("Geçersiz adres ya da bu adres bir token değil.", "Invalid address, or this address is not a token."));
+      if (res.status === 429) throw new UserError(T("Çok fazla istek gönderildi. Biraz bekleyip tekrar deneyin.", "Too many requests. Please wait a moment and try again."));
+      throw new UserError(T("Sunucuda bir hata oluştu. Biraz sonra tekrar deneyin.", "Something went wrong on the server. Please try again shortly."));
+    }
+    if (!data || typeof data.score !== "number" || !Array.isArray(data.checks)) {
+      throw new UserError(T("Sunucudan beklenmeyen bir yanıt geldi. Biraz sonra tekrar deneyin.", "Unexpected response from the server. Please try again shortly."));
+    }
+    lastRaw = { data, address };
+    return toView(data, address);
+  }
+  let lastRaw = null; // son TokenReport; dil değişince yeniden istek atmadan tekrar çizmek için
+
+  // ---------- Analiz adımları (yükleniyor durumu; analiz 5–25 sn sürebilir) ----------
+  // Adımlar bu zamanlarda (ms) ilerler; son adım ("Rapor yazılıyor") yanıt gelene kadar döner.
+  const STEP_AT = [0, 1200, 3000, 5500, 9000];
   async function runSteps(promise) {
     const steps = [...document.querySelectorAll(".step")];
     steps.forEach((s) => s.classList.remove("active", "done"));
-    for (const s of steps) {
-      s.classList.add("active");
-      await sleep(650 + Math.random() * 450);
-      s.classList.remove("active"); s.classList.add("done");
+    let current = -1;
+    const advance = (i) => {
+      if (i <= current) return;
+      for (let k = 0; k <= current; k++) { steps[k].classList.remove("active"); steps[k].classList.add("done"); }
+      for (let k = current + 1; k < i; k++) steps[k].classList.add("done");
+      current = i;
+      steps[i].classList.add("active");
+    };
+    const timers = [
+      ...STEP_AT.slice(0, steps.length).map((t, i) => setTimeout(() => advance(i), t)),
+      // Uzun beklemede Ekspi kullanıcıyı bilgilendirir
+      setTimeout(() => window.Mascot.say(T("Hâlâ bakıyorum, bu işlem 25 saniyeye kadar sürebilir…", "Still checking, this can take up to 25 seconds…")), 12000),
+      setTimeout(() => window.Mascot.say(T("Beklenenden uzun sürdü, az kaldı…", "Taking longer than expected, almost there…")), 26000),
+    ];
+    try {
+      const result = await promise;
+      steps.forEach((s) => { s.classList.remove("active"); s.classList.add("done"); });
+      await sleep(350);
+      return result;
+    } catch (e) {
+      steps.forEach((s) => s.classList.remove("active"));
+      throw e;
+    } finally {
+      timers.forEach(clearTimeout);
     }
-    return promise; // backend daha uzun sürerse burada bekler
   }
 
   // ---------- Rapor ----------
@@ -118,14 +190,16 @@
         ${c.raw ? `<details><summary>${esc(L.t("rep.tech"))}</summary><code>${esc(c.raw)}</code></details>` : ""}
       </div>`).join("");
 
+    // Backend cüzdan dağılımı / site alıntısı vermiyorsa panel yerinde kalır, "veri yok" yazar.
+    const NO_DATA = T("— Veri yok", "— No data");
     $("#holders").innerHTML = (r.holders || []).map((h) => `
       <div class="hbar ${h.pct >= 25 && !/diğer|other|everyone/i.test(h.label) ? "big" : ""}">
         <span>${esc(h.label)}</span><div class="track"><div class="fill" data-w="${+h.pct}"></div></div><b>${L.lang === "en" ? +h.pct + "%" : "%" + +h.pct}</b>
-      </div>`).join("");
+      </div>`).join("") || esc(NO_DATA);
     setTimeout(() => document.querySelectorAll(".hbar .fill").forEach((f) => (f.style.width = f.dataset.w + "%")), 100);
 
     $("#flags").innerHTML = (r.siteFlags || []).map((f) => `<li class="${f.level === "ok" ? "clean" : ""}">${esc(f.text)}</li>`).join("")
-      || `<li class="clean">${esc(L.t("rep.noSite"))}</li>`;
+      || esc(NO_DATA);
 
     $("#report").classList.remove("hidden");
     window.Mascot.setReport(r.summary, r.audioUrl);
@@ -151,7 +225,10 @@
       const report = await runSteps(fetchReport(address));
       render(report);
     } catch (e) {
-      window.Mascot.say(T("Bir şeyler ters gitti: ", "Something went wrong: ") + e.message);
+      console.error("[analyze]", e);
+      const msg = e instanceof UserError ? e.message
+        : T("Beklenmeyen bir hata oluştu. Sayfayı yenileyip tekrar deneyin.", "An unexpected error occurred. Please reload the page and try again.");
+      window.Mascot.say(T("Bir şeyler ters gitti: ", "Something went wrong: ") + msg);
     } finally {
       busy = false;
     }
@@ -159,11 +236,15 @@
 
   $("#scan-form").addEventListener("submit", (e) => { e.preventDefault(); analyze($("#address").value); });
   document.querySelectorAll("[data-demo]").forEach((b) => b.addEventListener("click", () => {
-    const addr = b.dataset.demo === "safe" ? "DEMO_TEMIZ_TOKEN" : "DEMO_RISKLI_TOKEN";
+    // Gerçek token adresleri config.js → DEMO_ADDRESSES
+    const addr = ((cfg.DEMO_ADDRESSES || {})[b.dataset.demo] || "").trim();
+    if (!addr) { window.Mascot.say(T("Bu örnek için henüz bir token adresi eklenmedi.", "No token address has been added for this example yet.")); return; }
     $("#address").value = addr; analyze(addr);
   }));
+  // "Raporu dinle": summary metni POST /api/voice ile okunur (voice.js; anahtar yoksa tarayıcı sesi)
   $("#listen").addEventListener("click", () => {
     const r = window.__lastReport; if (!r) return;
+    if (!r.summary) { window.Mascot.say(T("Bu raporda okunacak bir özet yok.", "This report has no summary to read.")); return; }
     window.Mascot.say(r.summary, { speak: true, audioUrl: r.audioUrl });
   });
   $("#share").addEventListener("click", async () => {
@@ -179,8 +260,9 @@
     renderPartners();
     counters.forEach((c) => { cio.unobserve(c); cio.observe(c); });
     const r = window.__lastReport;
-    if (r && !busy && !$("#report").classList.contains("hidden")) {
-      try { render(await fetchReport(r.address)); } catch (_) {}
+    // Backend raporu tek dilde döndürür; analizi tekrar çalıştırmadan (5–25 sn, API kotası) yeniden çiz.
+    if (r && lastRaw && !busy && !$("#report").classList.contains("hidden")) {
+      render(toView(lastRaw.data, lastRaw.address));
     }
   });
 

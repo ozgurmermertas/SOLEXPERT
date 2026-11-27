@@ -1,14 +1,15 @@
 // ===== SolExpert ayarları =====
-// Backend hazır olunca USE_MOCK = false yapın; API_BASE backend'in adresi
-// (aynı Next.js / Vercel projesindeyse boş bırakın).
+// Arayüz aynı Next.js projesindeki backend'i çağırır (bkz. API.md).
+// API_BASE backend'in adresi (aynı Next.js / Vercel projesindeyse boş bırakın).
 window.SOLEXPERT_CONFIG = {
-  USE_MOCK: true,
   API_BASE: "",
-  // POST {API_BASE}/api/analyze  body: { address }  -> rapor JSON'u (mocks/*.json ile aynı yapı)
+  // POST {API_BASE}/api/analyze  body: { address }  -> TokenReport (lib/types.ts); app.js tasarıma çevirir
   ANALYZE_PATH: "/api/analyze",
-  // POST {API_BASE}/api/tts  body: { text, voiceId }  -> audio/mpeg (ElevenLabs).
-  // Analiz mock'ta olsa bile ses her zaman önce buradan denenir; route yoksa tarayıcı sesine düşer.
-  TTS_PATH: "/api/tts",
+  // Analiz isteği bu süreden uzun sürerse iptal edilir (ms). Backend maxDuration = 60 sn.
+  ANALYZE_TIMEOUT_MS: 65000,
+  // POST {API_BASE}/api/voice  body: { text }  -> audio/mpeg (ElevenLabs, sunucudaki ELEVENLABS_VOICE_ID ile).
+  // Anahtar yoksa (503) tarayıcı sesine düşer.
+  TTS_PATH: "/api/voice",
   // GET {API_BASE}/api/voices -> hesabınızdaki ElevenLabs sesleri [{ id, name, desc }]
   VOICES_PATH: "/api/voices",
 
@@ -21,6 +22,13 @@ window.SOLEXPERT_CONFIG = {
     { id: "ErXwobaYiN019PkySvjV", name: "Antoni", desc: "erkek, samimi", descEn: "male, friendly" },
     { id: "21m00Tcm4TlvDq8ikWAM", name: "Rachel", desc: "sakin anlatıcı", descEn: "calm narrator" },
   ],
+
+  // "Örnek riskli / temiz token" butonlarının analiz ettiği gerçek adresler.
+  // Boşsa buton tıklanınca Ekspi "henüz eklenmedi" der. Hackathon günü risky'ye bilinen bir scam adresi yazılabilir.
+  DEMO_ADDRESSES: {
+    risky: "",
+    safe: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263", // BONK
+  },
 
   // "Kullanılan teknolojiler" kartları. Logoyu assets/logos/ altına koyun; dosya yoksa isim yazılır.
   PARTNERS: [
