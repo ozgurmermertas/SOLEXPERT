@@ -1,7 +1,7 @@
 // TÜM puan kuralları burada. Ham gerçekler → kontrol kartları → 0–100 risk skoru.
 // Kural değişirse CLAUDE.md'deki tabloyu da güncelle.
 // Her kontrol: Türkçe detail + İngilizce detailEn + kısa teknik değer (arayüzde "Teknik detay").
-import type { CheckResult, RiskLevel, WebsiteNote } from "../types";
+import type { CheckResult, RiskLevel, TokenInfo, WebsiteNote } from "../types";
 import type { Facts } from "../facts";
 import { isDangerousGroup } from "../onchain/bundle";
 
@@ -25,6 +25,12 @@ const result = (
 
 const unknown = (base: Base, t: Text = { tr: "Veri alınamadı.", en: "Data could not be retrieved." }) =>
   result(base, "bilinmiyor", 0, t);
+
+// Sahibi milyonlarca olan token'larda (ör. Wrapped SOL) en büyük hesaplar RPC'den alınamaz.
+const TOO_MANY_HOLDERS: Text = {
+  tr: "Çok fazla sahibi olduğu için dağılım hesaplanamadı.",
+  en: "The distribution could not be calculated because the token has too many holders.",
+};
 
 export function buildChecks(f: Facts): CheckResult[] {
   const checks: CheckResult[] = [];
@@ -81,7 +87,11 @@ export function buildChecks(f: Facts): CheckResult[] {
 
   // ---- 2. Dağılım ----
   const top10Base = { id: "top10", group: "dagilim", title: "İlk 10 holder" } as const;
-  if (!f.holders) checks.push(unknown(top10Base));
+  if (!f.holders) {
+    checks.push(f.holdersTooMany
+      ? unknown(top10Base, TOO_MANY_HOLDERS)
+      : unknown(top10Base));
+  }
   else {
     const p = f.holders.top10Pct;
     const tech = `top10Share: ${(p / 100).toFixed(2)}`;
@@ -130,7 +140,9 @@ export function buildChecks(f: Facts): CheckResult[] {
   // Bağlantılı cüzdanlar: en büyük holderlardan aynı kaynaktan fonlananlar.
   // 3+ cüzdan veya grubun payı > %15 → tehlikeli (20, skor en az 61); 2 cüzdan → dikkat (5).
   const bundleBase = { id: "bundle", group: "dagilim", title: "Bağlantılı cüzdanlar" } as const;
-  if (!f.bundle) {
+  if (!f.bundle && f.holdersTooMany) {
+    checks.push(unknown(bundleBase, TOO_MANY_HOLDERS));
+  } else if (!f.bundle) {
     checks.push(unknown(bundleBase, {
       tr: "Cüzdan bağlantıları 12 saniye içinde incelenemedi.",
       en: "Wallet links could not be checked within 12 seconds.",
@@ -312,8 +324,9 @@ const TITLE_EN: Record<CheckResult["id"], string> = {
   website: "Official website",
 };
 
-// Bunlardan biri "bilinmiyor" ise seviye en az "dikkat" olur (skor değişmez):
+// Bunlardan biri "bilinmiyor" ise seviye en az "dikkat" olur, skor 31'e çıkar:
 // satılabilirlik, likidite ve holder dağılımı bilinmeden "düşük risk" denmez.
+// Köklü token'lar hariç (isEstablished): orada eksik veri genelde token'ın büyüklüğünden kaynaklanır.
 const CRITICAL_IF_UNKNOWN: CheckResult["id"][] = ["sell_test", "liquidity", "top10"];
 
 // Seviyelerin skor alt sınırları (CLAUDE.md: 0–30 düşük, 31–60 dikkat, 61–100 yüksek).
@@ -339,14 +352,47 @@ function scoreFloor(checks: CheckResult[]): number {
   return floor;
 }
 
-export function computeScore(checks: CheckResult[]): { score: number; level: RiskLevel } {
+/** Seviye sadece eksik veri yüzünden yükseldiğinde özetin başına eklenen cümle. */
+export const DATA_GAP_NOTE = {
+  tr: "Bazı kontrollerin verisi alınamadı, bu yüzden dikkatli olunmalı.",
+  en: "Data for some checks could not be retrieved, so caution is advised.",
+} as const;
+
+const ESTABLISHED_MIN_LIQUIDITY = 1_000_000;
+const ESTABLISHED_MIN_AGE_DAYS = 90;
+
+/**
+ * Köklü token: basma ve dondurma yetkileri kapalı, likidite 1 milyon $ üzeri, 90 günden eski.
+ * Bunlarda bilinmeyen kritik kontrol seviyeyi yükseltmez.
+ */
+export function isEstablished(checks: CheckResult[], token: Pick<TokenInfo, "liquidityUsd" | "createdAt">): boolean {
+  const passed = (id: CheckResult["id"]) => checks.some((c) => c.id === id && c.status === "gecti");
+  const created = token.createdAt ? new Date(token.createdAt).getTime() : NaN;
+  const ageDays = (Date.now() - created) / 86_400_000;
+  return passed("mint_authority") && passed("freeze_authority")
+    && (token.liquidityUsd ?? 0) > ESTABLISHED_MIN_LIQUIDITY
+    && Number.isFinite(ageDays) && ageDays > ESTABLISHED_MIN_AGE_DAYS;
+}
+
+/**
+ * dataGap: seviye sadece bilinmeyen kritik kontrol yüzünden "dikkat"e çıktı (skor 31'e çekildi).
+ * Bu durumda özet sebebini söyler (DATA_GAP_NOTE).
+ */
+export function computeScore(
+  checks: CheckResult[],
+  token: Pick<TokenInfo, "liquidityUsd" | "createdAt">,
+): { score: number; level: RiskLevel; dataGap: boolean } {
   let score = Math.min(100, checks.reduce((s, c) => s + c.points, 0));
   score = Math.max(score, scoreFloor(checks));
-  let level: RiskLevel = score < MIN_DIKKAT ? "dusuk" : score < MIN_YUKSEK ? "dikkat" : "yuksek";
-  if (level === "dusuk" && checks.some((c) => c.status === "bilinmiyor" && CRITICAL_IF_UNKNOWN.includes(c.id))) {
-    level = "dikkat";
+  let dataGap = false;
+  if (score < MIN_DIKKAT
+    && checks.some((c) => c.status === "bilinmiyor" && CRITICAL_IF_UNKNOWN.includes(c.id))
+    && !isEstablished(checks, token)) {
+    score = MIN_DIKKAT; // gösterge ile seviye tutarlı kalsın
+    dataGap = true;
   }
-  return { score, level };
+  const level: RiskLevel = score < MIN_DIKKAT ? "dusuk" : score < MIN_YUKSEK ? "dikkat" : "yuksek";
+  return { score, level, dataGap };
 }
 
 export function positiveSignals(f: Facts): string[] {

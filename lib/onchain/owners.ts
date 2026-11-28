@@ -25,6 +25,14 @@ export interface LargestAccount {
 // Holder ve bundle kontrolleri aynı anda istiyor: aynı token için tek istek atılır, 60 sn paylaşılır.
 const largestCache = new Map<string, { at: number; value: Promise<LargestAccount[]> }>();
 
+/**
+ * Helius, sahibi milyonlarca olan token'larda (ör. Wrapped SOL) getTokenLargestAccounts'ı reddeder:
+ * "Too many accounts requested". Bu hata geçici değildir; arayüzde ayrı bir açıklama gösterilir.
+ */
+export function isTooManyAccountsError(e: unknown): boolean {
+  return e instanceof Error && /too many accounts/i.test(e.message);
+}
+
 /** Token'ın en büyük (en fazla 20) hesabı, büyükten küçüğe. */
 export function getLargestAccounts(mint: string): Promise<LargestAccount[]> {
   const now = Date.now();

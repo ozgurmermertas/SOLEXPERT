@@ -3,6 +3,7 @@ import { getMintFacts } from "./onchain/mint";
 import { getMetadataFacts } from "./onchain/metadata";
 import { getCreatorFacts, getHolderFacts } from "./onchain/holders";
 import { getBundleFacts } from "./onchain/bundle";
+import { isTooManyAccountsError } from "./onchain/owners";
 import { getMarketFacts } from "./onchain/market";
 import { getSellFacts } from "./onchain/sellTest";
 import { getLpFacts } from "./onchain/lpLock";
@@ -10,7 +11,7 @@ import { getPriceHistory } from "./onchain/priceHistory";
 import { getWebsiteFacts } from "./offchain/website";
 import { aiEnabled } from "./ai/gemini";
 import { writeSummary } from "./ai/report";
-import { buildChecks, computeScore, positiveSignals, websiteNotes } from "./scoring/score";
+import { buildChecks, computeScore, DATA_GAP_NOTE, positiveSignals, websiteNotes } from "./scoring/score";
 import type { Facts } from "./facts";
 import type { TokenReport } from "./types";
 
@@ -57,9 +58,12 @@ export async function analyzeToken(rawAddress: string, opts: AnalyzeOptions = {}
   const baseKey = `${address}|${withAi ? "ai" : "noai"}`;
   const base = await cached(baseCache, baseKey, () => runAnalysis(address, withAi));
   // 6) AI özeti, istenen dilde (başarısız olursa rapor yine döner).
-  const summary = withAi
+  const aiSummary = withAi
     ? await cached(summaryCache, `${baseKey}|${lang}`, () => safe("summary", writeSummary(base, lang)))
     : null;
+  // Seviye sadece eksik veri yüzünden "dikkat"e çıktıysa özet bunu açıkça söyler (AI kapalıyken de).
+  const note = computeScore(base.checks, base.token).dataGap ? DATA_GAP_NOTE[lang] : null;
+  const summary = note ? (aiSummary ? `${note} ${aiSummary}` : note) : aiSummary;
   return { ...base, summary };
 }
 
@@ -69,9 +73,13 @@ async function runAnalysis(address: string, withAi: boolean): Promise<Base> {
   const mint = await getMintFacts(address);
 
   // 2) Birbirinden bağımsız kontroller paralel çalışır; biri çökerse diğerleri devam eder.
+  let holdersTooMany = false;
   const [metadata, holders, creator, bundle, market] = await Promise.all([
     safe("metadata", getMetadataFacts(address)),
-    safe("holders", getHolderFacts(address, mint.supply)),
+    safe("holders", getHolderFacts(address, mint.supply).catch((e) => {
+      if (isTooManyAccountsError(e)) holdersTooMany = true;
+      throw e;
+    })),
     safe("creator", getCreatorFacts(address, mint.supply)),
     safe("bundle", getBundleFacts(address, mint.supply)), // en fazla 12 sn, aşarsa null → "bilinmiyor"
     safe("market", getMarketFacts(address)),
@@ -95,25 +103,27 @@ async function runAnalysis(address: string, withAi: boolean): Promise<Base> {
       }))
     : null;
 
-  const facts: Facts = { address, mint, metadata, holders, creator, bundle, market, sell, lp, website };
+  const facts: Facts = { address, mint, metadata, holders, holdersTooMany, creator, bundle, market, sell, lp, website };
 
   // 5) Kural tabanlı skor.
   const checks = buildChecks(facts);
-  const { score, level } = computeScore(checks);
+
+  const token: Base["token"] = {
+    address,
+    name: metadata?.name ?? null,
+    symbol: metadata?.symbol ?? null,
+    imageUrl: metadata?.imageUrl ?? null,
+    website: websiteUrl,
+    twitter: metadata?.twitter ?? market?.twitter ?? null,
+    telegram: metadata?.telegram ?? market?.telegram ?? null,
+    createdAt: creator?.createdAt ?? market?.pairCreatedAt ?? null,
+    priceUsd: market?.priceUsd ?? null,
+    liquidityUsd: market?.liquidityUsd ?? null,
+  };
+  const { score, level } = computeScore(checks, token);
 
   const report: Base = {
-    token: {
-      address,
-      name: metadata?.name ?? null,
-      symbol: metadata?.symbol ?? null,
-      imageUrl: metadata?.imageUrl ?? null,
-      website: websiteUrl,
-      twitter: metadata?.twitter ?? market?.twitter ?? null,
-      telegram: metadata?.telegram ?? market?.telegram ?? null,
-      createdAt: creator?.createdAt ?? market?.pairCreatedAt ?? null,
-      priceUsd: market?.priceUsd ?? null,
-      liquidityUsd: market?.liquidityUsd ?? null,
-    },
+    token,
     score,
     level,
     checks,

@@ -91,7 +91,11 @@ Skor aralıkları: 0–30 düşük (yeşil), 31–60 dikkat (sarı), 61–100 y�
 - `bundle` "tehlikeli" → skor en az **61** (yüksek).
 - 3 ya da daha fazla "tehlikeli" kontrol → skor en az **61** (yüksek); 2 tane → en az **31** (dikkat).
 - Token 24 saatten yeni (`age` "dikkat") **ve** likidite 10.000 $ altı (`liquidity` "tehlikeli") → skor en az **61** (yüksek).
-- `sell_test`, `liquidity` veya `top10` "bilinmiyor" ise seviye en az **dikkat** olur (skor değişmez).
+- `sell_test`, `liquidity` veya `top10` "bilinmiyor" ise skor en az **31** (dikkat) olur ve özetin başına
+  "Bazı kontrollerin verisi alınamadı, bu yüzden dikkatli olunmalı." eklenir (AI kapalıyken özet bu cümledir).
+  İstisna — köklü token: basma ve dondurma yetkisi kapalı, likidite > 1 milyon $ ve 90 günden eski → bu kural uygulanmaz.
+- Sahibi milyonlarca olan token'larda (ör. Wrapped SOL) Helius `getTokenLargestAccounts` reddeder ("Too many accounts"):
+  `top10` ve `bundle` "bilinmiyor" kalır, metin "Çok fazla sahibi olduğu için dağılım hesaplanamadı." olur.
 
 `bundle` yöntemi (`lib/onchain/bundle.ts`): en büyük 12 token hesabı → sahip cüzdanlar
 (havuz/program hesapları çıkarılır: sadece System Program'a ait cüzdanlar) → 2 adımlı iz:

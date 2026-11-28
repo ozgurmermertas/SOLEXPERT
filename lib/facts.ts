@@ -89,6 +89,8 @@ export interface Facts {
   mint: MintFacts;
   metadata: MetadataFacts | null;
   holders: HolderFacts | null;
+  /** Sahip sayısı çok büyük olduğu için en büyük hesaplar alınamadı (holders ve bundle null). */
+  holdersTooMany?: boolean;
   creator: CreatorFacts | null;
   bundle: BundleFacts | null;
   market: MarketFacts | null;

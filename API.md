@@ -42,7 +42,8 @@ if (!res.ok) {
   - `proje` → "Proje gerçek mi?"
 - Her kartta `status` ikonu: `gecti` 🟢, `dikkat` 🟡, `tehlikeli` 🔴, `bilinmiyor` ⚪
 - `checks[].technical`: kısa teknik değer ("Teknik detay" altında), ör. `mintAuthority: null`
-- `summary`: AI özeti (null olabilir)
+- `summary`: AI özeti (null olabilir). Seviye sadece eksik veri yüzünden "dikkat"e çıktıysa (skor 31) başında
+  "Bazı kontrollerin verisi alınamadı, bu yüzden dikkatli olunmalı." yazar; AI kapalıyken özet sadece bu cümledir.
 - `positiveSignals`: yeşil etiketler
 - `holderDistribution`: "Para kimin elinde?" paneli, satırlar halinde arzın yüzdesi (0–100). Alınamazsa `null`.
   ```json
