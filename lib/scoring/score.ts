@@ -74,14 +74,34 @@ export function buildChecks(f: Facts): CheckResult[] {
     if (t.transferHook) issues.push({ tr: "transferleri engelleyebilecek özel kod (transfer hook) bağlı", en: "custom code (transfer hook) can block transfers" });
     if (t.nonTransferable) issues.push({ tr: "token transfer edilemiyor", en: "the token cannot be transferred" });
     if (t.defaultFrozen) issues.push({ tr: "yeni hesaplar donmuş olarak açılıyor", en: "new accounts start frozen" });
-    const tech = `program: Token-2022, transferFeeBps: ${t.transferFeeBps}, permanentDelegate: ${t.permanentDelegate ? short(t.permanentDelegate) : "null"}`;
+    // Şu an zararsız ama ileride değiştirilebilecek ayarlar: her yetkili "dikkat", 5 puan.
+    const mutable: Text[] = [];
+    if (t.transferFeeAuthority) mutable.push(t.transferFeeBps > 0
+      ? { tr: "transfer vergisi ileride değiştirilebilir: yetkili cüzdan oranı yükseltebilir", en: "the transfer tax can be changed later: an authority can raise the rate" }
+      : { tr: "transfer vergisi şu an %0 ama ileride değiştirilebilir: yetkili cüzdan vergi koyabilir", en: "the transfer tax is 0% now but can be changed later: an authority can add a tax" });
+    if (t.transferHookAuthority) mutable.push({
+      tr: "transferlere bağlı program (transfer hook) ileride değiştirilebilir",
+      en: "the program attached to transfers (transfer hook) can be changed later",
+    });
+    if (t.defaultStateAuthority) mutable.push({
+      tr: "yeni hesapların varsayılan durumu ileride değiştirilebilir: yeni hesaplar donmuş açılabilir",
+      en: "the default account state can be changed later: new accounts could start frozen",
+    });
+    const tech = [
+      "program: Token-2022",
+      `transferFeeBps: ${t.transferFeeBps}`,
+      `permanentDelegate: ${t.permanentDelegate ? short(t.permanentDelegate) : "null"}`,
+      `transferFeeConfigAuthority: ${t.transferFeeAuthority ? short(t.transferFeeAuthority) : "null"}`,
+      `transferHookAuthority: ${t.transferHookAuthority ? short(t.transferHookAuthority) : "null"}`,
+      t.defaultStateAuthority ? `defaultAccountStateAuthority: ${short(t.defaultStateAuthority)}` : "",
+    ].filter(Boolean).join(", ");
+    const all = [...issues, ...mutable];
+    const joined: Text = { tr: cap(all.map((i) => i.tr).join("; ")) + ".", en: cap(all.map((i) => i.en).join("; ")) + "." };
+    const points = (issues.length ? 20 : 0) + mutable.length * 5;
     checks.push(
-      issues.length
-        ? result(t22Base, "tehlikeli", 20, {
-            tr: cap(issues.map((i) => i.tr).join("; ")) + ".",
-            en: cap(issues.map((i) => i.en).join("; ")) + ".",
-          }, tech)
-        : result(t22Base, "gecti", 0, { tr: "Token-2022, ama tehlikeli bir ayar yok.", en: "Token-2022, but no dangerous settings." }, tech),
+      issues.length ? result(t22Base, "tehlikeli", points, joined, tech)
+      : mutable.length ? result(t22Base, "dikkat", points, joined, tech)
+      : result(t22Base, "gecti", 0, { tr: "Token-2022, ama tehlikeli bir ayar yok.", en: "Token-2022, but no dangerous settings." }, tech),
     );
   }
 
@@ -280,6 +300,22 @@ export function buildChecks(f: Facts): CheckResult[] {
     );
   }
 
+  // Metadata güncelleme yetkisi: açıksa ad, logo ve site linki sonradan değiştirilebilir ("dikkat", 5 puan).
+  const metaBase = { id: "metadata", group: "proje", title: "Metadata yetkisi" } as const;
+  const ua = f.metadata?.updateAuthority;
+  if (ua === undefined) checks.push(unknown(metaBase));
+  else if (ua) {
+    checks.push(result(metaBase, "dikkat", 5, {
+      tr: "Token'ın adı, logosu ve site linki sonradan değiştirilebilir (metadata güncelleme yetkisi açık).",
+      en: "The token's name, logo and website link can be changed later (metadata update authority is active).",
+    }, `updateAuthority: ${short(ua)}`));
+  } else {
+    checks.push(result(metaBase, "gecti", 0, {
+      tr: "Token'ın adı, logosu ve linkleri kilitli; değiştirilemez.",
+      en: "The token's name, logo and links are locked and cannot be changed.",
+    }, "updateAuthority: null (immutable)"));
+  }
+
   return checks.map((c) => ({ ...c, titleEn: TITLE_EN[c.id] }));
 }
 
@@ -322,6 +358,7 @@ const TITLE_EN: Record<CheckResult["id"], string> = {
   lp_lock: "Liquidity lock",
   age: "Token age",
   website: "Official website",
+  metadata: "Metadata authority",
 };
 
 // Bunlardan biri "bilinmiyor" ise seviye en az "dikkat" olur, skor 31'e çıkar:

@@ -8,6 +8,10 @@ export interface Token2022Flags {
   transferHook: string | null;      // null = yok
   nonTransferable: boolean;
   defaultFrozen: boolean;
+  // Ayarı ileride değiştirebilecek yetkililer (null = yok / kapatılmış). Her biri "dikkat", 5 puan.
+  transferFeeAuthority: string | null;   // transferFeeConfig yetkilisi: vergi %0 olsa bile yükseltebilir
+  transferHookAuthority: string | null;  // transferHook yetkilisi: bağlı programı değiştirebilir
+  defaultStateAuthority: string | null;  // defaultAccountState'i değiştirebilen (Token-2022'de dondurma yetkilisi)
 }
 
 export interface MintFacts {
@@ -26,6 +30,8 @@ export interface MetadataFacts {
   website: string | null;
   twitter: string | null;
   telegram: string | null;
+  /** Metadata güncelleme yetkilisi (ad, logo, linkler değiştirilebilir). null = değiştirilemez. undefined = bilinmiyor. */
+  updateAuthority?: string | null;
 }
 
 export interface HolderFacts {

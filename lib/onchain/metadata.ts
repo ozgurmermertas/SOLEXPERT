@@ -4,6 +4,8 @@ import { fetchJson, rpc } from "../http";
 import type { MetadataFacts } from "../facts";
 
 interface DasAsset {
+  mutable?: boolean;
+  authorities?: { address: string; scopes?: string[] }[];
   content?: {
     json_uri?: string;
     metadata?: { name?: string; symbol?: string };
@@ -40,6 +42,12 @@ export async function getMetadataFacts(address: string): Promise<MetadataFacts> 
     website: normalizeUrl(off.website ?? off.extensions?.website ?? off.external_url ?? content.links?.external_url),
     twitter: normalizeUrl(off.twitter ?? off.extensions?.twitter),
     telegram: normalizeUrl(off.telegram ?? off.extensions?.telegram),
+    // DAS: mutable=false → metadata kilitli. Açıksa güncelleme yetkilisi "full" ya da "metadata" kapsamlı hesaptır.
+    updateAuthority: asset.mutable === false ? null
+      : asset.mutable === true
+        ? (asset.authorities?.find((a) => a.scopes?.some((s) => s === "full" || s === "metadata"))?.address
+          ?? asset.authorities?.[0]?.address ?? null)
+        : undefined,
   };
 }
 

@@ -71,14 +71,14 @@
   const STATUS = { gecti: "ok", dikkat: "warn", tehlikeli: "danger", bilinmiyor: "unknown" };
   const SEVERITY = { tehlikeli: 3, dikkat: 2, bilinmiyor: 1, gecti: 0 };
 
-  // Backend'in 11 kontrolü tasarımdaki 5 karta toplanır. İlk kontrol kartın ana konusu;
+  // Backend'in 12 kontrolü tasarımdaki 5 karta toplanır. İlk kontrol kartın ana konusu;
   // diğerleri sadece sorun varsa (dikkat/tehlikeli) kartın rengini ve metnini etkiler.
   const CARDS = [
     { id: "mint_authority", tr: "Yeni para basılabilir mi?", en: "Can new tokens be minted?", checks: ["mint_authority"] },
     { id: "freeze_authority", tr: "Satışın dondurulabilir mi?", en: "Can your sale be frozen?", checks: ["freeze_authority", "token2022", "sell_test"] },
     { id: "top_holders", tr: "Para kimin elinde?", en: "Who holds the supply?", checks: ["top10", "bundle", "dev_share"] },
     { id: "liquidity", tr: "Likidite yeterli mi?", en: "Is there enough liquidity?", checks: ["liquidity", "lp_lock"] },
-    { id: "website", tr: "Web sitesi güvenilir mi?", en: "Is the website trustworthy?", checks: ["website", "age"] },
+    { id: "website", tr: "Web sitesi güvenilir mi?", en: "Is the website trustworthy?", checks: ["website", "age", "metadata"] },
   ];
 
   // Kartta yeri olmayan (ileride eklenen) bir kontrol de kaybolmasın: grubunun kartına gider.

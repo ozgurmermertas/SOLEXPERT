@@ -45,15 +45,19 @@ export async function getMintFacts(address: string): Promise<MintFacts> {
     freezeAuthority: info.freezeAuthority ?? null,
     supply: BigInt(info.supply),
     decimals: info.decimals,
-    token2022: isToken2022 ? readExtensions(info.extensions ?? []) : null,
+    token2022: isToken2022 ? readExtensions(info.extensions ?? [], info.freezeAuthority ?? null) : null,
   };
 }
 
-function readExtensions(exts: ParsedExtension[]): Token2022Flags {
+function readExtensions(exts: ParsedExtension[], freezeAuthority: string | null): Token2022Flags {
   const find = (name: string) => exts.find((e) => e.extension === name)?.state;
 
   const fee = find("transferFeeConfig") as
-    | { newerTransferFee?: { transferFeeBasisPoints?: number }; olderTransferFee?: { transferFeeBasisPoints?: number } }
+    | {
+        newerTransferFee?: { transferFeeBasisPoints?: number };
+        olderTransferFee?: { transferFeeBasisPoints?: number };
+        transferFeeConfigAuthority?: string | null;
+      }
     | undefined;
   const transferFeeBps = Math.max(
     fee?.newerTransferFee?.transferFeeBasisPoints ?? 0,
@@ -61,8 +65,9 @@ function readExtensions(exts: ParsedExtension[]): Token2022Flags {
   );
 
   const delegate = find("permanentDelegate") as { delegate?: string | null } | undefined;
-  const hook = find("transferHook") as { programId?: string | null } | undefined;
+  const hook = find("transferHook") as { programId?: string | null; authority?: string | null } | undefined;
   const defaultState = find("defaultAccountState") as { accountState?: string } | undefined;
+  const hasDefaultState = exts.some((e) => e.extension === "defaultAccountState");
 
   return {
     transferFeeBps,
@@ -70,5 +75,9 @@ function readExtensions(exts: ParsedExtension[]): Token2022Flags {
     transferHook: hook?.programId ?? null,
     nonTransferable: exts.some((e) => e.extension === "nonTransferable"),
     defaultFrozen: defaultState?.accountState === "frozen",
+    transferFeeAuthority: fee?.transferFeeConfigAuthority ?? null,
+    transferHookAuthority: hook?.authority ?? null,
+    // Varsayılan hesap durumunu Token-2022'de dondurma yetkilisi değiştirir; ayrı bir alanı yoktur.
+    defaultStateAuthority: hasDefaultState ? freezeAuthority : null,
   };
 }

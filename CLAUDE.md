@@ -76,7 +76,7 @@ API.md                      ← Frontend'in backend'i nasıl çağıracağı
 |---|---|---|---|
 | mint_authority | Basma yetkisi | Açık | 25 |
 | freeze_authority | Dondurma yetkisi | Açık | 15 |
-| token2022 | Gizli ayarlar | Transfer vergisi veya permanent delegate | 20 |
+| token2022 | Gizli ayarlar | Transfer vergisi veya permanent delegate → tehlikeli, 20. Ayrıca ileride değiştirilebilir ayar yetkilisi (null değilse): transferFeeConfig (vergi %0 olsa bile), transferHook, defaultAccountState (= dondurma yetkilisi) → dikkat, her biri +5 | 20 + 5'er |
 | top10 | İlk 10 holder payı | >%50 → 15, %30–50 → 7 | 15 |
 | dev_share | Geliştirici payı | >%10 | 10 |
 | bundle | Bağlantılı cüzdanlar (EN: Linked wallets) | Aynı kaynaktan fonlanan 3+ büyük holder **veya** grubun payı >%15 → 20 ve skor en az 61; 2 cüzdan → dikkat, 5 | 20 (+taban 61) |
@@ -84,6 +84,7 @@ API.md                      ← Frontend'in backend'i nasıl çağıracağı
 | liquidity | Likidite | < 5.000 $ (ya da havuz yok) → 20; < 10.000 $ → 10 | 20 |
 | lp_lock | Likidite kilidi | LP kilitli/yakılmış değil | 15 |
 | age | Token yaşı | < 24 saat | 5 |
+| metadata | Metadata yetkisi (EN: Metadata authority) | Güncelleme yetkisi açık (DAS `mutable`): ad, logo, site linki sonradan değiştirilebilir → dikkat | 5 |
 | website | Resmi site | Abartılı vaat veya zincirle çelişki → 10; sadece şablon/jenerik içerik → dikkat, 0 | 10 |
 
 Skor aralıkları: 0–30 düşük (yeşil), 31–60 dikkat (sarı), 61–100 yüksek (kırmızı).

@@ -14,7 +14,8 @@ export type CheckId =
   | "liquidity"
   | "lp_lock"
   | "age"
-  | "website";
+  | "website"
+  | "metadata";
 
 export type CheckGroup = "anahtarlar" | "dagilim" | "alim_satim" | "proje";
 

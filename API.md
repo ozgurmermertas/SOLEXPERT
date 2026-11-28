@@ -69,9 +69,9 @@ if (!res.ok) {
   `level`: `warn` = kırmızı bayrak, `ok` = olumlu/nötr gözlem. `textEn` null olabilir.
 - `token`: isim, sembol, logo, linkler
 
-SolExpert arayüzü (`public/js/app.js`) 11 kontrolü 5 karta toplar: basma · dondurma (+gizli ayarlar,
+SolExpert arayüzü (`public/js/app.js`) 12 kontrolü 5 karta toplar: basma · dondurma (+gizli ayarlar,
 satış testi) · para kimin elinde (+bağlantılı cüzdanlar, geliştirici payı) · likidite (+kilit) ·
-web sitesi (+token yaşı). Yan kontroller sadece sorunluysa kartın rengini ve metnini etkiler.
+web sitesi (+token yaşı, metadata yetkisi). Yan kontroller sadece sorunluysa kartın rengini ve metnini etkiler.
 
 ## 2. Sesli okuma
 
