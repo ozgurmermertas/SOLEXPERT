@@ -101,7 +101,9 @@ Skor aralıkları: 0–30 düşük (yeşil), 31–60 dikkat (sarı), 61–100 y�
 birbirine ≤ 1 saat olan cüzdanları bağlar. 1000+ işlemli holder cüzdanı atlanır.
 Aynı anda en fazla 3 RPC isteği (Helius 429'u azaltmak için); tüm kontrol en fazla 12 sn.
 Süre dolunca o ana kadar incelenenlerde tehlikeli grup varsa kısmi sonuç kullanılır, yoksa "bilinmiyor".
-`lib/http.ts`: Helius 429 / "overloaded" dönerse istek 4 kez tekrar denenir (0,3 / 0,7 / 1,5 / 3 sn).
+`lib/http.ts`: `.env.local`de `HELIUS_API_KEY_2` varsa, bir anahtar 429 / "overloaded" / 5xx verince
+aynı istek hemen diğer anahtarla denenir (en son başarılı anahtarla başlanır). İkisi de 429 / "overloaded"
+verirse istek 4 kez tekrar denenir (0,3 / 0,7 / 1,5 / 3 sn). İkinci anahtar yoksa tek anahtarla aynı şekilde çalışır.
 
 Önbellek: `analyzeToken` sonucu 10 dk bellekte tutulur (adres + AI açık/kapalı + dil).
 Aynı anda gelen aynı istekler tek analizi paylaşır. Sunucu yeniden başlarsa boşalır.
