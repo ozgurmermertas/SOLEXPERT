@@ -26,7 +26,7 @@ window.SOLEXPERT_CONFIG = {
   // "Örnek riskli / temiz token" butonlarının analiz ettiği gerçek adresler.
   // Boşsa buton tıklanınca Ekspi "henüz eklenmedi" der. Hackathon günü risky'ye bilinen bir scam adresi yazılabilir.
   DEMO_ADDRESSES: {
-    risky: "",
+    risky: "CmVUoJUt7hMGc9ze7s8zYdnA7enMfCAFdQCggxcbACWU", // CWU (bilinen rug pull)
     safe: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263", // BONK
   },
 
